@@ -3,145 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>HIELITOS AHH!! - SISTEMA OPERATIVO INTEGRAL</title>
+<title>HIELITOS AHH!! - SISTEMA INTEGRAL PRO</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
     :root{--bg:#F0F7FF;--su:#fff;--pr:#0066CC;--sc:#7EC8FF;--gn:#00875A;--ye:#FF8B00;--re:#DE350B;--tx:#172B4D;--t2:#5E6C84;--bd:#DFE1E6;--r:16px}
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
     
-    .topbar{background:var(--pr);padding:1rem;display:flex;justify-content:space-between;align-items:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem}
+    /* Topbar Original */
+    .topbar{background:var(--pr);padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;color:#fff;box-shadow:0 2px 12px rgba(0,102,204,.3)}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem}.logo span{color:#7EC8FF}
+    .sp{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);padding:4px 10px;border-radius:20px;font-size:.65rem;font-weight:600}
+    .sd{width:7px;height:7px;border-radius:50%;background:#5EE8A0}
+
+    /* Navegación Original */
     .tabs{display:flex;background:var(--su);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
-    .tab{flex:1;padding:0.8rem 0.2rem;text-align:center;font-size:0.6rem;font-weight:700;color:var(--t2);text-transform:uppercase;border:none;background:none;cursor:pointer}
-    .tab.active{color:var(--pr)}
-    .tab-i{font-size:1.3rem;display:block;margin-bottom:2px}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:.6rem 0;cursor:pointer;border:none;background:none;gap:2px}
+    .tab.active .tl{color:var(--pr)}
+    .ti{font-size:1.3rem}.tl{font-size:.6rem;font-weight:700;color:var(--t2);text-transform:uppercase}
 
-    .screen{display:none;flex:1;overflow-y:auto;padding:1rem;flex-direction:column;gap:1rem}
+    .screen{display:none;flex:1;overflow-y:auto;padding:1.1rem;flex-direction:column;gap:1rem}
     .screen.active{display:flex}
-    .card{background:var(--su);border-radius:var(--r);padding:1.1rem;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1rem}
-    h2{font-family:'Syne',sans-serif;font-size:0.95rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;color:var(--pr)}
-    h3{font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--t2);text-transform:uppercase;border-bottom:1px solid var(--bd);padding-bottom:4px}
-
-    .field{margin-bottom:0.8rem}
-    label{display:block;font-size:0.65rem;font-weight:700;color:var(--t2);margin-bottom:0.3rem;text-transform:uppercase}
-    input, select, textarea{width:100%;padding:0.7rem;border:2px solid var(--bd);border-radius:10px;font-family:inherit;font-size:0.9rem;outline:none;background:#fff}
+    
+    /* Tarjetas y UI */
+    .card{background:var(--su);border-radius:var(--r);padding:1.1rem;box-shadow:0 2px 16px rgba(0,0,0,.08);margin-bottom:1rem}
+    h2{font-family:'Syne',sans-serif;font-size:.9rem;margin-bottom:1rem;color:var(--tx);display:flex;align-items:center;gap:8px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    
+    .field{margin-bottom:0.9rem}
+    label{display:block;font-size:.65rem;font-weight:700;color:var(--t2);margin-bottom:0.4rem;text-transform:uppercase}
+    input, select, textarea{width:100%;padding:0.75rem;border:2px solid var(--bd);border-radius:10px;font-family:inherit;font-size:.9rem;outline:none}
     .btn{width:100%;padding:0.9rem;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;color:#fff;cursor:pointer}
     .btn-pr{background:var(--pr)}.btn-gn{background:var(--gn)}.btn-re{background:var(--re)}
-    
-    .check-item{background:#f9fbff; padding:12px; border-radius:10px; border:1px solid var(--bd); margin-bottom:10px}
-    .check-info{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px}
-    .check-title{font-size:0.8rem; font-weight:700; flex:1; padding-right:10px}
-    .check-meta{font-size:0.6rem; color:var(--t3); font-weight:600; text-align:right}
-    .sem{display:flex;gap:6px}
-    .dot{flex:1; padding:7px; border-radius:6px; text-align:center; font-size:0.55rem; font-weight:800; cursor:pointer; border:1px solid var(--bd); color: var(--t2); background:#fff}
-    .dot.g.active{background:var(--gn); color:#fff; border-color:var(--gn)}
-    .dot.y.active{background:var(--ye); color:#fff; border-color:var(--ye)}
-    .dot.r.active{background:var(--re); color:#fff; border-color:var(--re)}
 
-    .dash-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    .stat-card{background:var(--su); padding:1rem; border-radius:var(--r); text-align:center; border-bottom:4px solid var(--bd)}
-    .stat-val{font-size:1.4rem; font-weight:800; color:var(--tx)}
-    .stat-lab{font-size:0.6rem; color:var(--t2); text-transform:uppercase; font-weight:700}
+    /* Inventario y KPI */
+    .stat-box{padding:1rem;border-radius:12px;text-align:center}
+    .stat-val{font-size:1.5rem;font-weight:800;font-family:'Syne'}
+    .stat-lab{font-size:.6rem;text-transform:uppercase;font-weight:700;opacity:0.9}
+
+    /* Checklist Pro */
+    .check-section{margin-bottom:1.5rem; border-left: 3px solid var(--pr); padding-left: 10px}
+    .check-title-sec{font-size:0.75rem; color:var(--pr); font-weight:800; margin-bottom:10px}
+    .check-item{background:#f8faff; padding:12px; border-radius:10px; border:1px solid var(--bd); margin-bottom:8px}
+    .check-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+    .check-name{font-size:0.78rem; font-weight:700; color:var(--tx)}
+    .check-resp{font-size:0.6rem; background:var(--pl); color:var(--pr); padding:2px 6px; border-radius:4px}
+    .sem{display:flex;gap:5px}
+    .dot{flex:1; padding:6px; border-radius:6px; font-size:0.55rem; font-weight:800; text-align:center; border:1.5px solid var(--bd); cursor:pointer; background:#fff}
+    .dot.g.active{background:var(--gn); border-color:var(--gn); color:#fff}
+    .dot.y.active{background:var(--ye); border-color:var(--ye); color:#fff}
+    .dot.r.active{background:var(--re); border-color:var(--re); color:#fff}
+    
+    .prog-bar{background:#eee; height:8px; border-radius:4px; margin-top:4px; overflow:hidden}
+    .prog-fill{height:100%; background:var(--gn); transition:0.3s}
 </style>
 </head>
 <body>
 
 <div class="topbar">
     <div class="logo">HIELITOS <span>AHH!!</span></div>
-    <div id="clock" style="font-size:0.7rem; font-weight:700"></div>
+    <div class="sp"><div class="sd"></div><span id="sync-status">Sincronizado</span></div>
 </div>
 
 <div class="screen active" id="sc-home">
-    <h2>📊 Resumen de Inventario</h2>
-    <div class="dash-grid">
-        <div class="stat-card" style="border-color:var(--pr)">
+    <h2>🧊 Inventario de Bolsas</h2>
+    <div class="grid-2">
+        <div class="stat-box" style="background:var(--pr); color:#fff">
             <div class="stat-lab">Hielo Cubo</div>
-            <div class="stat-val" id="st-cubo">0</div>
+            <div class="stat-val" id="inv-cubo">0</div>
         </div>
-        <div class="stat-card" style="border-color:var(--sc)">
+        <div class="stat-box" style="background:var(--sc); color:var(--pr)">
             <div class="stat-lab">Hielo Cilindro</div>
-            <div class="stat-val" id="st-cili">0</div>
+            <div class="stat-val" id="inv-cili">0</div>
         </div>
     </div>
-    
-    <div class="card">
-        <h2>📈 Cumplimiento General</h2>
-        <div style="background:#eee; height:12px; border-radius:6px; margin:8px 0; overflow:hidden">
-            <div id="bar-perc" style="width:0%; background:var(--gn); height:100%; transition:0.5s"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:0.7rem; font-weight:700">
-            <span id="txt-perc">0% completado</span>
-            <span id="txt-counts">0/0 tareas</span>
+
+    <h2>📊 Estado de Resultados (Mes)</h2>
+    <div class="card" style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+        <div><label>Ventas Totales</label><div class="stat-val" id="res-ventas" style="color:var(--gn)">$0</div></div>
+        <div><label>Gastos Totales</label><div class="stat-val" id="res-gastos" style="color:var(--re)">$0</div></div>
+        <div style="grid-column: span 2; border-top:1px solid #eee; padding-top:10px">
+            <label>Utilidad Neta</label><div class="stat-val" id="res-util" style="color:var(--pr)">$0</div>
         </div>
     </div>
+
+    <h2>📈 Cumplimiento por Periodo</h2>
+    <div id="cumplimiento-lista"></div>
 </div>
 
 <div class="screen" id="sc-prod">
     <div class="card">
-        <h2>🧊 Producción y Movimientos</h2>
-        <div class="field"><label>Tipo de Hielo</label><select id="p-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
-        <div class="field"><label>Movimiento</label><select id="p-mov"><option value="prod">Producción (+)</option><option value="merma">Merma / Rotura (-)</option><option value="dona">Donación (-)</option></select></div>
-        <div class="field"><label>Cantidad (Bolsas)</label><input type="number" id="p-cant" placeholder="0"></div>
+        <h2>🧊 Registrar Producción</h2>
+        <div class="field"><label>Fecha</label><input type="date" id="p-fecha"></div>
+        <div class="field"><label>Tipo Hielo</label><select id="p-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
+        <div class="field"><label>Acción</label><select id="p-accion"><option value="suma">Producción (+)</option><option value="merma">Merma / Rotura (-)</option><option value="dona">Donación (-)</option></select></div>
+        <div class="field"><label>Cantidad (Bolsas)</label><input type="number" id="p-cant" value="0"></div>
         <div class="field"><label>Responsable</label><select id="p-resp"><option>Robert</option><option>Roberto</option><option>Jeydi</option></select></div>
-        <button class="btn btn-pr" onclick="updInv()">Actualizar Stock</button>
+        <button class="btn btn-pr" onclick="registrarProd()">✓ Guardar Movimiento</button>
     </div>
 </div>
 
 <div class="screen" id="sc-ventas">
     <div class="card">
-        <h2>🚚 Venta y Entrega</h2>
-        <div class="field"><label>Cliente</label><input type="text" id="v-cli" placeholder="Nombre del cliente"></div>
-        <div class="field"><label>Tipo Hielo</label><select id="v-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
-        <div class="dash-grid">
+        <h2>🚚 Nueva Venta</h2>
+        <div class="field"><label>Fecha</label><input type="date" id="v-fecha"></div>
+        <div class="field"><label>Cliente</label><input type="text" id="v-cli" placeholder="Nombre"></div>
+        <div class="grid-2">
             <div class="field"><label>Bolsas</label><input type="number" id="v-cant" oninput="calcV()"></div>
             <div class="field"><label>Precio U.</label><input type="number" id="v-pre" value="15" oninput="calcV()"></div>
         </div>
-        <div class="field"><label>Total Cobrado</label><input type="text" id="v-tot" readonly style="background:#f4f4f4; font-weight:800"></div>
-        <button class="btn btn-gn" onclick="regVenta()">Registrar Venta</button>
+        <div class="field"><label>Total</label><input type="text" id="v-tot" readonly style="background:#f9f9f9"></div>
+        <div class="field"><label>Tipo Hielo</label><select id="v-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
+        <button class="btn btn-gn" onclick="registrarVenta()">✓ Registrar Venta</button>
     </div>
 </div>
 
 <div class="screen" id="sc-mant">
     <div class="card">
-        <h2>🔧 Mantenimiento de Equipos</h2>
+        <h2>🔧 Mantenimiento / Fallas</h2>
         <div class="field"><label>Equipo</label><select id="m-eq"><option>Máquina Hielo</option><option>Conservadores</option><option>Camioneta</option><option>Planta Purificadora</option></select></div>
         <div class="field"><label>Tipo</label><select id="m-tip"><option>Preventivo</option><option>Correctivo</option><option>Falla Crítica</option></select></div>
         <div class="field"><label>Fecha</label><input type="date" id="m-fec"></div>
-        <div class="field"><label>Realizado por</label><input type="text" id="m-per" placeholder="Nombre"></div>
-        <div class="field"><label>Comentarios / Hallazgos</label><textarea id="m-obs" rows="3"></textarea></div>
-        <button class="btn btn-re" onclick="regMant()">Guardar Reporte</button>
+        <div class="field"><label>Realizado por</label><input type="text" id="m-resp" placeholder="Nombre técnico"></div>
+        <div class="field"><label>Comentarios</label><textarea id="m-obs" rows="2"></textarea></div>
+        <button class="btn btn-re" onclick="registrarMant()">Guardar Reporte</button>
     </div>
 </div>
 
 <div class="screen" id="sc-check">
     <h2>✅ Tablero de Control Semáforo</h2>
-    <div id="check-content"></div>
+    <div id="check-container"></div>
 </div>
 
 <nav class="tabs">
-    <button class="tab active" onclick="nav('home')"><span class="tab-i">📊</span>Dashboard</button>
-    <button class="tab" onclick="nav('prod')"><span class="tab-i">🧊</span>Stock</button>
-    <button class="tab" onclick="nav('ventas')"><span class="tab-i">💰</span>Ventas</button>
-    <button class="tab" onclick="nav('mant')"><span class="tab-i">🔧</span>Mant.</button>
-    <button class="tab" onclick="nav('check')"><span class="tab-i">✅</span>Check</button>
+    <button class="tab active" onclick="nav('home')"><div class="ti">📊</div><div class="tl">Inicio</div></button>
+    <button class="tab" onclick="nav('prod')"><div class="ti">🧊</div><div class="tl">Stock</div></button>
+    <button class="tab" onclick="nav('ventas')"><div class="ti">🚚</div><div class="tl">Ventas</div></button>
+    <button class="tab" onclick="nav('mant')"><div class="ti">🔧</div><div class="tl">Mant.</div></button>
+    <button class="tab" onclick="nav('check')"><div class="ti">✅</div><div class="tl">Check</div></button>
 </nav>
 
 <script>
-    // Configuración de tareas basada en el archivo adjunto
-    const checklistConfig = [
-        { r: "Diario", t: ["Registro de producción hielo", "Conciliación producción vs entrega", "Limpieza área producción/embolsado", "Verificación visual máquina/fugas", "Medición Parámetros (Cloro, TDS, pH, Dureza)", "Checklist camioneta (Llantas/Luces)", "Registro gastos del día"] },
-        { r: "Semanal", t: ["Retro-lavado planta purificadora", "Revisión rotoplas agua cruda (Limpiar si sucio)", "Revisión sistema purificación", "Limpieza profunda condensador", "Revisión fugas en general", "Revisión consumo eléctrico", "Inventario físico hielo"] },
-        { r: "Mensual", t: ["Revisión filtros agua", "Auditoría gastos operativos", "Contratación personal extra (si necesario)"] },
-        { r: "Trimestral", t: ["Análisis microbiológico / coliformes"] },
-        { r: "Anual", t: ["Servicio mayor máquina hielo", "Revisión instalación eléctrica", "Análisis físico-químico agua", "Presupuesto anual negocio"] }
+    // Configuración de tareas según Versión Final solicitada
+    const checkConfig = [
+        { r: "Diario", t: [
+            {n:"Producción y Parámetros Agua", r:"Robert"},
+            {n:"Limpieza Áreas y Máquina", r:"Robert"},
+            {n:"Conciliación Prod vs Entrega", r:"Robert"},
+            {n:"Registro Gastos del Día", r:"Jeydi"}
+        ]},
+        { r: "Semanal", t: [
+            {n:"Retro-lavado y Filtros", r:"Robert"},
+            {n:"Revisión Rotoplas y Fugas", r:"Robert"},
+            {n:"Auditoría Ventas vs Efectivo", r:"Jeydi"}
+        ]},
+        { r: "Mensual", t: [
+            {n:"Fondo de Mantenimiento", r:"Jeydi"},
+            {n:"Revisión Rentabilidad Clientes", r:"Jeydi/Maria"},
+            {n:"Contratación Personal Extra", r:"Roberto"}
+        ]},
+        { r: "Anual", t: [
+            {n:"Servicio Mayor Máquina", r:"Técnico"},
+            {n:"Revisión Inst. Eléctrica", r:"Electricista"}
+        ]}
     ];
 
-    let data = JSON.parse(localStorage.getItem('hh_final_db')) || {
+    let db = JSON.parse(localStorage.getItem('hh_full_db')) || {
         inv: { cubo: 0, cili: 0 },
-        log: [],
-        mants: [],
-        checks: {}
+        ventas: [],
+        gastos: [],
+        checks: {},
+        mant: []
     };
 
     function nav(id) {
@@ -153,114 +185,90 @@
         if(id === 'check') renderCheck();
     }
 
-    function updDash() {
-        document.getElementById('st-cubo').innerText = data.inv.cubo;
-        document.getElementById('st-cili').innerText = data.inv.cili;
-        
-        const total = checklistConfig.reduce((a, b) => a + b.t.length, 0);
-        const done = Object.values(data.checks).filter(v => v.s === 'g').length;
-        const p = Math.round((done / total) * 100) || 0;
-        
-        document.getElementById('bar-perc').style.width = p + "%";
-        document.getElementById('txt-perc').innerText = p + "% cumplimiento";
-        document.getElementById('txt-counts').innerText = `${done}/${total} tareas OK`;
-    }
-
-    function updInv() {
-        const t = document.getElementById('p-tipo').value;
-        const m = document.getElementById('p-mov').value;
-        const c = parseInt(document.getElementById('p-cant').value) || 0;
-        const r = document.getElementById('p-resp').value;
-
-        if(m === 'prod') data.inv[t === 'cubo' ? 'cubo' : 'cili'] += c;
-        else data.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
-
-        save();
-        alert("Stock actualizado");
-        document.getElementById('p-cant').value = "";
-    }
-
     function calcV() {
         const b = document.getElementById('v-cant').value || 0;
         const p = document.getElementById('v-pre').value || 0;
         document.getElementById('v-tot').value = "$" + (b * p);
     }
 
-    function regVenta() {
-        const t = document.getElementById('v-tipo').value;
-        const c = parseInt(document.getElementById('v-cant').value) || 0;
+    function registrarProd() {
+        const t = document.getElementById('p-tipo').value;
+        const a = document.getElementById('p-accion').value;
+        const c = parseInt(document.getElementById('p-cant').value) || 0;
         
-        if(data.inv[t === 'cubo' ? 'cubo' : 'cili'] < c) {
-            alert("⚠️ Stock insuficiente"); return;
-        }
+        if(a === 'suma') db.inv[t === 'cubo' ? 'cubo' : 'cili'] += c;
+        else db.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
 
-        data.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
-        data.log.push({ f: new Date(), cli: document.getElementById('v-cli').value, b: c, t });
-        save();
-        alert("Venta registrada y stock descontado");
-        document.getElementById('v-cli').value = ""; document.getElementById('v-cant').value = "";
+        save(); alert("Inventario actualizado");
     }
 
-    function regMant() {
-        data.mants.push({
-            eq: document.getElementById('m-eq').value,
-            ti: document.getElementById('m-tip').value,
-            fe: document.getElementById('m-fec').value,
-            pe: document.getElementById('m-per').value,
-            ob: document.getElementById('m-obs').value
-        });
-        save();
-        alert("Reporte de mantenimiento guardado");
-        document.getElementById('m-obs').value = "";
+    function registrarVenta() {
+        const t = document.getElementById('v-tipo').value;
+        const c = parseInt(document.getElementById('v-cant').value) || 0;
+        const m = (c * parseFloat(document.getElementById('v-pre').value)) || 0;
+
+        db.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
+        db.ventas.push({f: document.getElementById('v-fecha').value, m: m});
+        save(); alert("Venta registrada");
+    }
+
+    function registrarMant() {
+        db.mant.push({e: document.getElementById('m-eq').value, f: document.getElementById('m-fec').value});
+        save(); alert("Reporte de mantenimiento guardado");
     }
 
     function renderCheck() {
-        const container = document.getElementById('check-content');
+        const container = document.getElementById('check-container');
         container.innerHTML = "";
-        checklistConfig.forEach(grupo => {
-            let h = `<h3>${grupo.r}</h3>`;
+        checkConfig.forEach(grupo => {
+            let h = `<div class="check-section"><div class="check-title-sec">${grupo.r}</div>`;
             grupo.t.forEach(tarea => {
-                const s = data.checks[tarea] || {s:'', f:'', c:''};
+                const s = db.checks[tarea.n] || {s:'', f:'', c:''};
                 h += `
                 <div class="check-item">
-                    <div class="check-info">
-                        <div class="check-title">${tarea}</div>
-                        <div class="check-meta">${s.f ? s.f : '--/--'}<br>${s.c ? '💬' : ''}</div>
-                    </div>
+                    <div class="check-head"><span class="check-name">${tarea.n}</span><span class="check-resp">${tarea.r}</span></div>
                     <div class="sem">
-                        <div class="dot r ${s.s==='r'?'active':''}" onclick="setS('${tarea}','r')">ALERTA</div>
-                        <div class="dot y ${s.s==='y'?'active':''}" onclick="setS('${tarea}','y')">PENDIENTE</div>
-                        <div class="dot g ${s.s==='g'?'active':''}" onclick="setS('${tarea}','g')">REALIZADO</div>
-                        <div class="dot" onclick="setCom('${tarea}')">📝</div>
+                        <div class="dot r ${s.s==='r'?'active':''}" onclick="setS('${tarea.n}','r')">FALLA</div>
+                        <div class="dot y ${s.s==='y'?'active':''}" onclick="setS('${tarea.n}','y')">PEND.</div>
+                        <div class="dot g ${s.s==='g'?'active':''}" onclick="setS('${tarea.n}','g')">LISTO</div>
                     </div>
                 </div>`;
             });
-            container.innerHTML += h;
+            container.innerHTML += h + `</div>`;
         });
     }
 
     function setS(t, v) {
-        if(!data.checks[t]) data.checks[t] = {s:'', f:'', c:''};
-        data.checks[t].s = v;
-        data.checks[t].f = new Date().toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit'});
+        db.checks[t] = {s: v, f: new Date().toLocaleDateString()};
         save(); renderCheck();
     }
 
-    function setCom(t) {
-        const msg = prompt("Añadir comentario para: " + t, data.checks[t]?.c || "");
-        if(msg !== null) {
-            if(!data.checks[t]) data.checks[t] = {s:'', f:'', c:''};
-            data.checks[t].c = msg;
-            save(); renderCheck();
-        }
+    function updDash() {
+        document.getElementById('inv-cubo').innerText = db.inv.cubo;
+        document.getElementById('inv-cili').innerText = db.inv.cili;
+        
+        const totV = db.ventas.reduce((a, b) => a + b.m, 0);
+        document.getElementById('res-ventas').innerText = "$" + totV.toLocaleString();
+        
+        const cumList = document.getElementById('cumplimiento-lista');
+        cumList.innerHTML = "";
+        checkConfig.forEach(g => {
+            const tareas = g.t.length;
+            const hechas = g.t.filter(t => db.checks[t.n]?.s === 'g').length;
+            const p = Math.round((hechas / tareas) * 100) || 0;
+            cumList.innerHTML += `
+                <div style="margin-bottom:10px">
+                    <div style="display:flex; justify-content:space-between; font-size:0.65rem; font-weight:700"><span>${g.r}</span><span>${p}%</span></div>
+                    <div class="prog-bar"><div class="prog-fill" style="width:${p}%"></div></div>
+                </div>`;
+        });
     }
 
-    function save() { localStorage.setItem('hh_final_db', JSON.stringify(data)); }
-
-    setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString('es-MX', {hour12:false});
-    }, 1000);
-
+    function save() { localStorage.setItem('hh_full_db', JSON.stringify(db)); }
+    
+    // Iniciar fechas hoy
+    const hoy = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(i => i.value = hoy);
     updDash();
 </script>
 </body>

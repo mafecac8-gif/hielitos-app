@@ -1,309 +1,267 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HIELITOS AHH!! - Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root{--bg:#F0F7FF;--su:#fff;--pr:#0066CC;--sc:#7EC8FF;--gn:#00875A;--ye:#FF8B00;--re:#DE350B;--tx:#172B4D;--t2:#5E6C84;--bd:#DFE1E6;--r:16px}
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
-        
-        /* Header & Nav */
-        .topbar{background:var(--pr);padding:1rem;display:flex;justify-content:space-between;align-items:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-        .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem}
-        .tabs{display:flex;background:var(--su);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
-        .tab{flex:1;padding:0.8rem 0.2rem;text-align:center;font-size:0.6rem;font-weight:700;color:var(--t2);text-transform:uppercase;border:none;background:none;cursor:pointer}
-        .tab.active{color:var(--pr)}
-        .tab-i{font-size:1.4rem;display:block;margin-bottom:2px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HIELITOS AHH!! - SISTEMA OPERATIVO INTEGRAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+    :root{--bg:#F0F7FF;--su:#fff;--pr:#0066CC;--sc:#7EC8FF;--gn:#00875A;--ye:#FF8B00;--re:#DE350B;--tx:#172B4D;--t2:#5E6C84;--bd:#DFE1E6;--r:16px}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    
+    .topbar{background:var(--pr);padding:1rem;display:flex;justify-content:space-between;align-items:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem}
+    .tabs{display:flex;background:var(--su);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
+    .tab{flex:1;padding:0.8rem 0.2rem;text-align:center;font-size:0.6rem;font-weight:700;color:var(--t2);text-transform:uppercase;border:none;background:none;cursor:pointer}
+    .tab.active{color:var(--pr)}
+    .tab-i{font-size:1.3rem;display:block;margin-bottom:2px}
 
-        /* Screens */
-        .screen{display:none;flex:1;overflow-y:auto;padding:1rem;flex-direction:column;gap:1rem}
-        .screen.active{display:flex}
-        .card{background:var(--su);border-radius:var(--r);padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
-        h2{font-family:'Syne',sans-serif;font-size:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+    .screen{display:none;flex:1;overflow-y:auto;padding:1rem;flex-direction:column;gap:1rem}
+    .screen.active{display:flex}
+    .card{background:var(--su);border-radius:var(--r);padding:1.1rem;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1rem}
+    h2{font-family:'Syne',sans-serif;font-size:0.95rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;color:var(--pr)}
+    h3{font-size:0.85rem;margin:1rem 0 0.5rem;color:var(--t2);text-transform:uppercase;border-bottom:1px solid var(--bd);padding-bottom:4px}
 
-        /* Forms */
-        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem}
-        .field{margin-bottom:1rem}
-        label{display:block;font-size:0.7rem;font-weight:700;color:var(--t2);margin-bottom:0.4rem;text-transform:uppercase}
-        input, select, textarea{width:100%;padding:0.8rem;border:2px solid var(--bd);border-radius:10px;font-family:inherit;font-size:0.9rem;outline:none}
-        input:focus{border-color:var(--pr)}
-        .btn{width:100%;padding:1rem;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;color:#fff;cursor:pointer;transition:0.2s}
-        .btn-pr{background:var(--pr)}
-        .btn-gn{background:var(--gn)}
-        
-        /* Checklist Semaforo */
-        .check-item{display:flex;align-items:center;justify-content:space-between;padding:0.8rem;border-bottom:1px solid var(--bd)}
-        .sem{display:flex;gap:5px}
-        .dot{width:25px;height:25px;border-radius:50%;border:2px solid transparent;cursor:pointer}
-        .dot.g{background:#c3e6cb}.dot.g.active{background:var(--gn);border-color:#000}
-        .dot.y{background:#ffeeba}.dot.y.active{background:var(--ye);border-color:#000}
-        .dot.r{background:#f5c6cb}.dot.r.active{background:var(--re);border-color:#000}
+    .field{margin-bottom:0.8rem}
+    label{display:block;font-size:0.65rem;font-weight:700;color:var(--t2);margin-bottom:0.3rem;text-transform:uppercase}
+    input, select, textarea{width:100%;padding:0.7rem;border:2px solid var(--bd);border-radius:10px;font-family:inherit;font-size:0.9rem;outline:none;background:#fff}
+    .btn{width:100%;padding:0.9rem;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;color:#fff;cursor:pointer}
+    .btn-pr{background:var(--pr)}.btn-gn{background:var(--gn)}.btn-re{background:var(--re)}
+    
+    .check-item{background:#f9fbff; padding:12px; border-radius:10px; border:1px solid var(--bd); margin-bottom:10px}
+    .check-info{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px}
+    .check-title{font-size:0.8rem; font-weight:700; flex:1; padding-right:10px}
+    .check-meta{font-size:0.6rem; color:var(--t3); font-weight:600; text-align:right}
+    .sem{display:flex;gap:6px}
+    .dot{flex:1; padding:7px; border-radius:6px; text-align:center; font-size:0.55rem; font-weight:800; cursor:pointer; border:1px solid var(--bd); color: var(--t2); background:#fff}
+    .dot.g.active{background:var(--gn); color:#fff; border-color:var(--gn)}
+    .dot.y.active{background:var(--ye); color:#fff; border-color:var(--ye)}
+    .dot.r.active{background:var(--re); color:#fff; border-color:var(--re)}
 
-        /* Dashboard */
-        .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem}
-        .stat{padding:1rem;border-radius:var(--r);color:#fff}
-        .stat-val{font-size:1.4rem;font-weight:800;font-family:'Syne',sans-serif}
-        .stat-label{font-size:0.6rem;text-transform:uppercase;opacity:0.9}
-
-        /* History */
-        .history-item{padding:0.8rem;border-bottom:1px solid var(--bd);font-size:0.8rem}
-        .tag{padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:700;float:right}
-        .tag-v{background:#e3f2fd;color:#0066cc}
-        .tag-g{background:#fce4ec;color:#c2185b}
-    </style>
+    .dash-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .stat-card{background:var(--su); padding:1rem; border-radius:var(--r); text-align:center; border-bottom:4px solid var(--bd)}
+    .stat-val{font-size:1.4rem; font-weight:800; color:var(--tx)}
+    .stat-lab{font-size:0.6rem; color:var(--t2); text-transform:uppercase; font-weight:700}
+</style>
 </head>
 <body>
 
 <div class="topbar">
-    <div class="logo">HIELITOS AHH!!</div>
-    <div id="date-now" style="font-size: 0.7rem; opacity: 0.8"></div>
+    <div class="logo">HIELITOS <span>AHH!!</span></div>
+    <div id="clock" style="font-size:0.7rem; font-weight:700"></div>
 </div>
 
 <div class="screen active" id="sc-home">
-    <h2>📊 Resumen del Mes</h2>
+    <h2>📊 Resumen de Inventario</h2>
     <div class="dash-grid">
-        <div class="stat" style="background:var(--pr)">
-            <div class="stat-label">Vendido Total</div>
-            <div class="stat-val" id="res-ventas">$0</div>
+        <div class="stat-card" style="border-color:var(--pr)">
+            <div class="stat-lab">Hielo Cubo</div>
+            <div class="stat-val" id="st-cubo">0</div>
         </div>
-        <div class="stat" style="background:var(--gn)">
-            <div class="stat-label">Cobrado Real</div>
-            <div class="stat-val" id="res-cobrado">$0</div>
-        </div>
-        <div class="stat" style="background:var(--ye)">
-            <div class="stat-label">Pendiente</div>
-            <div class="stat-val" id="res-pendiente">$0</div>
-        </div>
-        <div class="stat" style="background:var(--re)">
-            <div class="stat-label">Gastos</div>
-            <div class="stat-val" id="res-gastos">$0</div>
+        <div class="stat-card" style="border-color:var(--sc)">
+            <div class="stat-lab">Hielo Cilindro</div>
+            <div class="stat-val" id="st-cili">0</div>
         </div>
     </div>
-    <div class="card" style="margin-top:1rem; background:var(--tx); color:#fff">
-        <div class="stat-label">Utilidad Neta Estimada</div>
-        <div class="stat-val" id="res-utilidad">$0</div>
+    
+    <div class="card">
+        <h2>📈 Cumplimiento General</h2>
+        <div style="background:#eee; height:12px; border-radius:6px; margin:8px 0; overflow:hidden">
+            <div id="bar-perc" style="width:0%; background:var(--gn); height:100%; transition:0.5s"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.7rem; font-weight:700">
+            <span id="txt-perc">0% completado</span>
+            <span id="txt-counts">0/0 tareas</span>
+        </div>
+    </div>
+</div>
+
+<div class="screen" id="sc-prod">
+    <div class="card">
+        <h2>🧊 Producción y Movimientos</h2>
+        <div class="field"><label>Tipo de Hielo</label><select id="p-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
+        <div class="field"><label>Movimiento</label><select id="p-mov"><option value="prod">Producción (+)</option><option value="merma">Merma / Rotura (-)</option><option value="dona">Donación (-)</option></select></div>
+        <div class="field"><label>Cantidad (Bolsas)</label><input type="number" id="p-cant" placeholder="0"></div>
+        <div class="field"><label>Responsable</label><select id="p-resp"><option>Robert</option><option>Roberto</option><option>Jeydi</option></select></div>
+        <button class="btn btn-pr" onclick="updInv()">Actualizar Stock</button>
     </div>
 </div>
 
 <div class="screen" id="sc-ventas">
     <div class="card">
-        <h2>🚚 Nueva Venta</h2>
-        <div class="field">
-            <label>Quién registra</label>
-            <select id="v-user"><option>Jeydi</option><option>Roberto</option><option>Otro</option></select>
+        <h2>🚚 Venta y Entrega</h2>
+        <div class="field"><label>Cliente</label><input type="text" id="v-cli" placeholder="Nombre del cliente"></div>
+        <div class="field"><label>Tipo Hielo</label><select id="v-tipo"><option value="cubo">Cubo</option><option value="cilindro">Cilindro</option></select></div>
+        <div class="dash-grid">
+            <div class="field"><label>Bolsas</label><input type="number" id="v-cant" oninput="calcV()"></div>
+            <div class="field"><label>Precio U.</label><input type="number" id="v-pre" value="15" oninput="calcV()"></div>
         </div>
-        <div class="field">
-            <label>Cliente</label>
-            <input type="text" id="v-cliente" placeholder="Nombre del cliente">
-        </div>
-        <div class="grid-2">
-            <div class="field">
-                <label>Bolsas</label>
-                <input type="number" id="v-cant" value="0" oninput="calcVenta()">
-            </div>
-            <div class="field">
-                <label>Precio Unitario</label>
-                <input type="number" id="v-precio" value="15" oninput="calcVenta()">
-            </div>
-        </div>
-        <div class="field">
-            <label>Monto Total (Automático)</label>
-            <input type="number" id="v-total" readonly style="background:#f9f9f9; font-weight:bold">
-        </div>
-        <div class="field">
-            <label>Método de Pago</label>
-            <select id="v-metodo">
-                <option>Efectivo</option>
-                <option>Transferencia</option>
-                <option>Apartado Klar</option>
-                <option>Pendiente de Pago</option>
-            </select>
-        </div>
-        <button class="btn btn-pr" onclick="saveVenta()">Registrar Venta</button>
+        <div class="field"><label>Total Cobrado</label><input type="text" id="v-tot" readonly style="background:#f4f4f4; font-weight:800"></div>
+        <button class="btn btn-gn" onclick="regVenta()">Registrar Venta</button>
     </div>
 </div>
 
-<div class="screen" id="sc-gastos">
+<div class="screen" id="sc-mant">
     <div class="card">
-        <h2>💸 Registro de Gasto</h2>
-        <div class="field"><label>Descripción del Gasto</label><input type="text" id="g-desc" placeholder="Ej: Pago de luz"></div>
-        <div class="field"><label>Monto</label><input type="number" id="g-monto" placeholder="$0.00"></div>
-        <div class="field">
-            <label>Método</label>
-            <select id="g-metodo"><option>Efectivo</option><option>Transferencia</option><option>Apartado Klar</option></select>
-        </div>
-        <div class="field"><label>Proveedor</label><input type="text" id="g-prov" placeholder="Nombre"></div>
-        <div class="field">
-            <label>¿Se emitió factura?</label>
-            <select id="g-factura"><option>No</option><option>Sí</option></select>
-        </div>
-        <button class="btn" style="background:var(--re)" onclick="saveGasto()">Guardar Gasto</button>
+        <h2>🔧 Mantenimiento de Equipos</h2>
+        <div class="field"><label>Equipo</label><select id="m-eq"><option>Máquina Hielo</option><option>Conservadores</option><option>Camioneta</option><option>Planta Purificadora</option></select></div>
+        <div class="field"><label>Tipo</label><select id="m-tip"><option>Preventivo</option><option>Correctivo</option><option>Falla Crítica</option></select></div>
+        <div class="field"><label>Fecha</label><input type="date" id="m-fec"></div>
+        <div class="field"><label>Realizado por</label><input type="text" id="m-per" placeholder="Nombre"></div>
+        <div class="field"><label>Comentarios / Hallazgos</label><textarea id="m-obs" rows="3"></textarea></div>
+        <button class="btn btn-re" onclick="regMant()">Guardar Reporte</button>
     </div>
 </div>
 
 <div class="screen" id="sc-check">
-    <div class="card">
-        <h2>✅ Checklist Operativo</h2>
-        <div id="check-list">
-            </div>
-    </div>
-    <div class="card">
-        <h2>💧 Retrolavado</h2>
-        <div class="field"><label>Fecha de realización</label><input type="date" id="retro-date"></div>
-        <div class="field">
-            <label>Responsable</label>
-            <select id="retro-user"><option>Jeydi</option><option>Roberto</option><option>Otro</option></select>
-        </div>
-        <button class="btn btn-gn" onclick="saveRetro()">Registrar Retrolavado</button>
-    </div>
-</div>
-
-<div class="screen" id="sc-historial">
-    <h2>🗂 Historial Reciente</h2>
-    <div id="historial-list"></div>
-    <button class="btn" style="background:#666; margin-top:1rem" onclick="exportCSV()">Descargar Data (CSV)</button>
+    <h2>✅ Tablero de Control Semáforo</h2>
+    <div id="check-content"></div>
 </div>
 
 <nav class="tabs">
-    <button class="tab active" onclick="showSc('home')"><span class="tab-i">📊</span>Inicio</button>
-    <button class="tab" onclick="showSc('ventas')"><span class="tab-i">💰</span>Ventas</button>
-    <button class="tab" onclick="showSc('gastos')"><span class="tab-i">💸</span>Gastos</button>
-    <button class="tab" onclick="showSc('check')"><span class="tab-i">✅</span>Check</button>
-    <button class="tab" onclick="showSc('historial')"><span class="tab-i">🗂</span>Data</button>
+    <button class="tab active" onclick="nav('home')"><span class="tab-i">📊</span>Dashboard</button>
+    <button class="tab" onclick="nav('prod')"><span class="tab-i">🧊</span>Stock</button>
+    <button class="tab" onclick="nav('ventas')"><span class="tab-i">💰</span>Ventas</button>
+    <button class="tab" onclick="nav('mant')"><span class="tab-i">🔧</span>Mant.</button>
+    <button class="tab" onclick="nav('check')"><span class="tab-i">✅</span>Check</button>
 </nav>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('hielitos_db')) || {ventas:[], gastos:[], retro:[], check:{}};
-    const tareas = ["Limpieza de filtros", "Lavado de camioneta", "Revisión de niveles", "Limpieza área embolsado"];
+    // Configuración de tareas basada en el archivo adjunto
+    const checklistConfig = [
+        { r: "Diario", t: ["Registro de producción hielo", "Conciliación producción vs entrega", "Limpieza área producción/embolsado", "Verificación visual máquina/fugas", "Medición Parámetros (Cloro, TDS, pH, Dureza)", "Checklist camioneta (Llantas/Luces)", "Registro gastos del día"] },
+        { r: "Semanal", t: ["Retro-lavado planta purificadora", "Revisión rotoplas agua cruda (Limpiar si sucio)", "Revisión sistema purificación", "Limpieza profunda condensador", "Revisión fugas en general", "Revisión consumo eléctrico", "Inventario físico hielo"] },
+        { r: "Mensual", t: ["Revisión filtros agua", "Auditoría gastos operativos", "Contratación personal extra (si necesario)"] },
+        { r: "Trimestral", t: ["Análisis microbiológico / coliformes"] },
+        { r: "Anual", t: ["Servicio mayor máquina hielo", "Revisión instalación eléctrica", "Análisis físico-químico agua", "Presupuesto anual negocio"] }
+    ];
 
-    function showSc(id) {
+    let data = JSON.parse(localStorage.getItem('hh_final_db')) || {
+        inv: { cubo: 0, cili: 0 },
+        log: [],
+        mants: [],
+        checks: {}
+    };
+
+    function nav(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.getElementById('sc-'+id).classList.add('active');
         event.currentTarget.classList.add('active');
-        updateDash();
-        renderHistorial();
+        if(id === 'home') updDash();
+        if(id === 'check') renderCheck();
     }
 
-    function calcVenta() {
-        const c = document.getElementById('v-cant').value || 0;
-        const p = document.getElementById('v-precio').value || 0;
-        document.getElementById('v-total').value = c * p;
-    }
-
-    function saveVenta() {
-        const v = {
-            id: Date.now(),
-            tipo: 'VENTA',
-            user: document.getElementById('v-user').value,
-            cliente: document.getElementById('v-cliente').value,
-            cant: document.getElementById('v-cant').value,
-            total: document.getElementById('v-total').value,
-            metodo: document.getElementById('v-metodo').value,
-            fecha: new Date().toLocaleDateString()
-        };
-        db.ventas.push(v);
-        saveAndRefresh();
-        alert("Venta registrada");
-    }
-
-    function saveGasto() {
-        const g = {
-            id: Date.now(),
-            tipo: 'GASTO',
-            desc: document.getElementById('g-desc').value,
-            monto: document.getElementById('g-monto').value,
-            metodo: document.getElementById('g-metodo').value,
-            prov: document.getElementById('g-prov').value,
-            fact: document.getElementById('g-factura').value,
-            fecha: new Date().toLocaleDateString()
-        };
-        db.gastos.push(g);
-        saveAndRefresh();
-        alert("Gasto guardado");
-    }
-
-    function saveRetro() {
-        db.retro.push({ fecha: document.getElementById('retro-date').value, user: document.getElementById('retro-user').value });
-        saveAndRefresh();
-        alert("Retrolavado registrado");
-    }
-
-    function saveAndRefresh() {
-        localStorage.setItem('hielitos_db', JSON.stringify(db));
-        updateDash();
-        renderHistorial();
-    }
-
-    function updateDash() {
-        const tVentas = db.ventas.reduce((s, x) => s + Number(x.total), 0);
-        const tGastos = db.gastos.reduce((s, x) => s + Number(x.monto), 0);
-        const tCobrado = db.ventas.filter(x => x.metodo !== 'Pendiente de Pago').reduce((s, x) => s + Number(x.total), 0);
-        const tPendiente = tVentas - tCobrado;
-
-        document.getElementById('res-ventas').innerText = '$' + tVentas;
-        document.getElementById('res-cobrado').innerText = '$' + tCobrado;
-        document.getElementById('res-pendiente').innerText = '$' + tPendiente;
-        document.getElementById('res-gastos').innerText = '$' + tGastos;
-        document.getElementById('res-utilidad').innerText = '$' + (tCobrado - tGastos);
-    }
-
-    function renderChecklist() {
-        const container = document.getElementById('check-list');
-        container.innerHTML = tareas.map(t => `
-            <div class="check-item">
-                <span style="font-size:0.8rem">${t}</span>
-                <div class="sem">
-                    <div class="dot r" onclick="setSem('${t}','r', this)"></div>
-                    <div class="dot y" onclick="setSem('${t}','y', this)"></div>
-                    <div class="dot g" onclick="setSem('${t}','g', this)"></div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function setSem(tarea, color, el) {
-        el.parentElement.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
-        el.classList.add('active');
-        db.check[tarea] = {color, fecha: new Date().toLocaleDateString()};
-        localStorage.setItem('hielitos_db', JSON.stringify(db));
-    }
-
-    function renderHistorial() {
-        const list = document.getElementById('historial-list');
-        const all = [...db.ventas, ...db.gastos].sort((a,b) => b.id - a.id).slice(0,10);
-        list.innerHTML = all.map(x => `
-            <div class="history-item">
-                <span class="tag ${x.tipo === 'VENTA' ? 'tag-v' : 'tag-g'}">${x.tipo}</span>
-                <b>${x.fecha}</b> - ${x.tipo === 'VENTA' ? x.cliente : x.desc}<br>
-                <small>${x.tipo === 'VENTA' ? x.cant + ' bolsas' : 'Prov: ' + x.prov}</small>
-                <b style="float:right">$${x.total || x.monto}</b>
-            </div>
-        `).join('');
-    }
-
-    function exportCSV() {
-        let csv = "Tipo,Fecha,Responsable/Prov,Descripcion/Cliente,Monto,Metodo,Factura\n";
-        db.ventas.forEach(v => csv += `VENTA,${v.fecha},${v.user},${v.cliente},${v.total},${v.metodo},N/A\n`);
-        db.gastos.forEach(g => csv += `GASTO,${g.fecha},${g.prov},${g.desc},${g.monto},${g.metodo},${g.fact}\n`);
+    function updDash() {
+        document.getElementById('st-cubo').innerText = data.inv.cubo;
+        document.getElementById('st-cili').innerText = data.inv.cili;
         
-        const blob = new Blob([csv], {type: 'text/csv'});
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('href', url);
-        a.setAttribute('download', 'hielitos_data.csv');
-        a.click();
+        const total = checklistConfig.reduce((a, b) => a + b.t.length, 0);
+        const done = Object.values(data.checks).filter(v => v.s === 'g').length;
+        const p = Math.round((done / total) * 100) || 0;
+        
+        document.getElementById('bar-perc').style.width = p + "%";
+        document.getElementById('txt-perc').innerText = p + "% cumplimiento";
+        document.getElementById('txt-counts').innerText = `${done}/${total} tareas OK`;
     }
 
-    // Init
-    document.getElementById('date-now').innerText = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    renderChecklist();
-    updateDash();
-    renderHistorial();
-</script>
+    function updInv() {
+        const t = document.getElementById('p-tipo').value;
+        const m = document.getElementById('p-mov').value;
+        const c = parseInt(document.getElementById('p-cant').value) || 0;
+        const r = document.getElementById('p-resp').value;
 
+        if(m === 'prod') data.inv[t === 'cubo' ? 'cubo' : 'cili'] += c;
+        else data.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
+
+        save();
+        alert("Stock actualizado");
+        document.getElementById('p-cant').value = "";
+    }
+
+    function calcV() {
+        const b = document.getElementById('v-cant').value || 0;
+        const p = document.getElementById('v-pre').value || 0;
+        document.getElementById('v-tot').value = "$" + (b * p);
+    }
+
+    function regVenta() {
+        const t = document.getElementById('v-tipo').value;
+        const c = parseInt(document.getElementById('v-cant').value) || 0;
+        
+        if(data.inv[t === 'cubo' ? 'cubo' : 'cili'] < c) {
+            alert("⚠️ Stock insuficiente"); return;
+        }
+
+        data.inv[t === 'cubo' ? 'cubo' : 'cili'] -= c;
+        data.log.push({ f: new Date(), cli: document.getElementById('v-cli').value, b: c, t });
+        save();
+        alert("Venta registrada y stock descontado");
+        document.getElementById('v-cli').value = ""; document.getElementById('v-cant').value = "";
+    }
+
+    function regMant() {
+        data.mants.push({
+            eq: document.getElementById('m-eq').value,
+            ti: document.getElementById('m-tip').value,
+            fe: document.getElementById('m-fec').value,
+            pe: document.getElementById('m-per').value,
+            ob: document.getElementById('m-obs').value
+        });
+        save();
+        alert("Reporte de mantenimiento guardado");
+        document.getElementById('m-obs').value = "";
+    }
+
+    function renderCheck() {
+        const container = document.getElementById('check-content');
+        container.innerHTML = "";
+        checklistConfig.forEach(grupo => {
+            let h = `<h3>${grupo.r}</h3>`;
+            grupo.t.forEach(tarea => {
+                const s = data.checks[tarea] || {s:'', f:'', c:''};
+                h += `
+                <div class="check-item">
+                    <div class="check-info">
+                        <div class="check-title">${tarea}</div>
+                        <div class="check-meta">${s.f ? s.f : '--/--'}<br>${s.c ? '💬' : ''}</div>
+                    </div>
+                    <div class="sem">
+                        <div class="dot r ${s.s==='r'?'active':''}" onclick="setS('${tarea}','r')">ALERTA</div>
+                        <div class="dot y ${s.s==='y'?'active':''}" onclick="setS('${tarea}','y')">PENDIENTE</div>
+                        <div class="dot g ${s.s==='g'?'active':''}" onclick="setS('${tarea}','g')">REALIZADO</div>
+                        <div class="dot" onclick="setCom('${tarea}')">📝</div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML += h;
+        });
+    }
+
+    function setS(t, v) {
+        if(!data.checks[t]) data.checks[t] = {s:'', f:'', c:''};
+        data.checks[t].s = v;
+        data.checks[t].f = new Date().toLocaleDateString('es-MX', {day:'2-digit', month:'2-digit'});
+        save(); renderCheck();
+    }
+
+    function setCom(t) {
+        const msg = prompt("Añadir comentario para: " + t, data.checks[t]?.c || "");
+        if(msg !== null) {
+            if(!data.checks[t]) data.checks[t] = {s:'', f:'', c:''};
+            data.checks[t].c = msg;
+            save(); renderCheck();
+        }
+    }
+
+    function save() { localStorage.setItem('hh_final_db', JSON.stringify(data)); }
+
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('es-MX', {hour12:false});
+    }, 1000);
+
+    updDash();
+</script>
 </body>
 </html>

@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>HIELITOS AHH!! - SISTEMA FINAL</title>
+<title>HIELITOS AHH!! - SISTEMA INTEGRAL FINAL</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-    :root{--bg:#F0F7FF;--su:#fff;--pr:#0066CC;--sc:#7EC8FF;--gn:#00875A;--ye:#FF8B00;--re:#DE350B;--tx:#172B4D;--t2:#5E6C84;--bd:#DFE1E6;--kl:#6B46C1;--r:20px}
+    :root{--bg:#F0F7FF;--su:#fff;--pr:#0066CC;--sc:#7EC8FF;--gn:#00875A;--ye:#FF8B00;--re:#DE350B;--tx:#172B4D;--t2:#5E6C84;--kl:#6B46C1;--bd:#DFE1E6;--r:20px}
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
     
     .topbar{background:var(--pr);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;color:#fff;box-shadow:0 4px 12px rgba(0,102,204,0.3)}
-    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem}
+    .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;line-height:1}
     .sp{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);padding:5px 12px;border-radius:20px;font-size:0.65rem;font-weight:700}
     .sd{width:8px;height:8px;border-radius:50%;background:#5EE8A0}
 
@@ -26,24 +26,24 @@
     h2{font-family:'Syne',sans-serif;font-size:0.95rem;margin-bottom:1.2rem;color:var(--tx);display:flex;align-items:center;gap:10px}
 
     .grid-btns{display:grid;grid-template-columns:repeat(auto-fit, minmax(80px, 1fr));gap:8px;margin-bottom:1rem}
-    .sel-btn{background:#fff; border:2px solid var(--bd); border-radius:12px; padding:10px; text-align:center; cursor:pointer; transition:0.2s; font-size:0.7rem; font-weight:700}
+    .sel-btn{background:#fff; border:2px solid var(--bd); border-radius:12px; padding:12px; text-align:center; cursor:pointer; transition:0.2s; font-size:0.7rem; font-weight:700}
     .sel-btn.active{border-color:var(--pr); background:#E8F2FF; color:var(--pr)}
+    .sel-btn i {display:block; font-size:1.4rem; margin-bottom:4px}
 
     .field{margin-bottom:1rem}
     label{display:block; font-size:0.65rem; font-weight:800; color:var(--t2); text-transform:uppercase; margin-bottom:5px}
     input, select, textarea{width:100%; padding:0.8rem; border:2px solid var(--bd); border-radius:12px; font-family:inherit; outline:none}
     .btn-main{width:100%; padding:1rem; border:none; border-radius:15px; font-family:'Syne'; font-weight:800; color:#fff; cursor:pointer; background:var(--pr)}
 
-    /* ESTADO DE RESULTADOS */
     .res-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
     .res-item{padding:12px; border-radius:12px; color:#fff}
-    .res-val{font-family:'Syne'; font-size:1.2rem; font-weight:800}
+    .res-val{font-family:'Syne'; font-size:1.1rem; font-weight:800}
 
-    /* CHECKLIST FINAL */
+    .check-section{margin-bottom:1.5rem; border-left:4px solid var(--pr); padding-left:12px}
     .check-card{background:#F9FBFF; border:1px solid var(--bd); border-radius:15px; padding:12px; margin-bottom:10px}
-    .check-meta{font-size:0.6rem; color:var(--t2); margin-top:5px; font-weight:600}
-    .sem{display:flex; gap:5px; margin-top:10px}
-    .sem-opt{flex:1; padding:8px; border-radius:8px; border:1px solid var(--bd); background:#fff; font-size:0.55rem; font-weight:800; text-align:center}
+    .check-meta{font-size:0.55rem; color:var(--t2); margin:4px 0; font-weight:600; text-transform:uppercase}
+    .sem{display:flex; gap:5px; margin-top:8px}
+    .sem-opt{flex:1; padding:7px; border-radius:8px; border:1px solid var(--bd); background:#fff; font-size:0.5rem; font-weight:800; text-align:center; cursor:pointer}
     .sem-opt.active.g{background:var(--gn); color:#fff; border-color:var(--gn)}
     .sem-opt.active.y{background:var(--ye); color:#fff; border-color:var(--ye)}
     .sem-opt.active.r{background:var(--re); color:#fff; border-color:var(--re)}
@@ -60,109 +60,144 @@
 </div>
 
 <div class="screen active" id="sc-home">
+    <div class="res-grid">
+        <div class="card" style="margin-bottom:0; text-align:center">
+            <label>Stock Cubo</label>
+            <div class="res-val" id="st-cubo" style="font-size:1.8rem; color:var(--pr)">0</div>
+        </div>
+        <div class="card" style="margin-bottom:0; text-align:center">
+            <label>Stock Cilindro</label>
+            <div class="res-val" id="st-cili" style="font-size:1.8rem; color:var(--sc)">0</div>
+        </div>
+    </div>
+
     <div class="card">
-        <h2>📊 Estado de Resultados (Mes)</h2>
+        <h2>📊 Resultados del Mes</h2>
         <div class="res-grid">
             <div class="res-item" style="background:var(--gn)">
-                <label style="color:rgba(255,255,255,0.8)">Ventas Totales</label>
+                <label style="color:rgba(255,255,255,0.8)">Ventas</label>
                 <div class="res-val" id="res-ventas">$0</div>
             </div>
             <div class="res-item" style="background:var(--re)">
-                <label style="color:rgba(255,255,255,0.8)">Gastos (Caja)</label>
+                <label style="color:rgba(255,255,255,0.8)">Gastos Caja</label>
                 <div class="res-val" id="res-gastos">$0</div>
             </div>
         </div>
-        <div class="card" style="margin:10px 0 0; background:var(--kl); color:#fff">
-            <label style="color:rgba(255,255,255,0.8)">Suma Apartado Klar</label>
+        <div class="card" style="margin:10px 0 0; background:var(--kl); color:#fff; padding:10px">
+            <label style="color:rgba(255,255,255,0.8)">Total Apartado Klar</label>
             <div class="res-val" id="res-klar">$0</div>
         </div>
-        <div class="card" style="margin:10px 0 0; border:2px solid var(--pr)">
+        <div class="card" style="margin:10px 0 0; border:2px solid var(--pr); padding:10px">
             <label>Utilidad Neta</label>
             <div class="res-val" id="res-util" style="color:var(--pr)">$0</div>
         </div>
     </div>
 
     <div class="card">
-        <h2>📅 Reportes por Día</h2>
+        <h2>📅 Consultar Reporte por Día</h2>
         <input type="date" id="rep-fecha" onchange="verReporteDia()">
-        <div id="reporte-area" style="margin-top:15px; font-size:0.8rem"></div>
+        <div id="reporte-area" style="margin-top:12px; font-size:0.75rem; line-height:1.5"></div>
+    </div>
+</div>
+
+<div class="screen" id="sc-prod">
+    <div class="card">
+        <h2>🧊 Producción e Inventario</h2>
+        <div class="field"><label>Fecha</label><input type="date" id="p-fecha"></div>
+        <label>Tipo de Hielo</label>
+        <div class="grid-btns">
+            <div class="sel-btn active" onclick="selBtn(this,'p-t','cubo')"><i>🟦</i>Cubo</div>
+            <div class="sel-btn" onclick="selBtn(this,'p-t','cili')"><i>⚪</i>Cilindro</div>
+        </div>
+        <input type="hidden" id="p-t" value="cubo">
+        
+        <label>Acción</label>
+        <div class="grid-btns">
+            <div class="sel-btn active" onclick="selBtn(this,'p-a','sum')"><i>➕</i>Producción</div>
+            <div class="sel-btn" onclick="selBtn(this,'p-a','mer')"><i>💔</i>Merma</div>
+            <div class="sel-btn" onclick="selBtn(this,'p-a','don')"><i>🎁</i>Donación</div>
+        </div>
+        <input type="hidden" id="p-a" value="sum">
+        
+        <div class="field"><label>Cantidad (Bolsas)</label><input type="number" id="p-c" value="0"></div>
+        <div class="field"><label>Responsable</label><select id="p-r"><option>Robert</option><option>Roberto</option><option>Jeydi</option></select></div>
+        <button class="btn-main" onclick="saveProd()">✓ ACTUALIZAR STOCK</button>
     </div>
 </div>
 
 <div class="screen" id="sc-ventas">
     <div class="card">
         <h2>🚚 Nueva Venta</h2>
+        <div class="field"><label>Fecha</label><input type="date" id="v-fecha"></div>
         <div class="field"><label>Cliente</label><input type="text" id="v-cli"></div>
-        <div class="field"><label>Cantidad Bolsas</label><input type="number" id="v-cant"></div>
-        <div class="field"><label>Método de Pago</label>
-            <div class="grid-btns">
-                <div class="sel-btn active" onclick="selBtn(this, 'v-pago', 'Efectivo')">Efectivo</div>
-                <div class="sel-btn" onclick="selBtn(this, 'v-pago', 'Transferencia')">Transf.</div>
-            </div>
-            <input type="hidden" id="v-pago" value="Efectivo">
+        <div class="res-grid">
+            <div class="field"><label>Bolsas</label><input type="number" id="v-c" oninput="calcV()"></div>
+            <div class="field"><label>Precio U.</label><input type="number" id="v-p" value="15" oninput="calcV()"></div>
         </div>
-        <button class="btn-main" onclick="saveVenta()">✓ REGISTRAR VENTA</button>
+        <div class="field"><label>Total</label><input type="text" id="v-t" readonly style="background:#f9f9f9; font-weight:800"></div>
+        <label>Método de Pago</label>
+        <div class="grid-btns">
+            <div class="sel-btn active" onclick="selBtn(this,'v-pag','Ef')"><i>💵</i>Efectivo</div>
+            <div class="sel-btn" onclick="selBtn(this,'v-pag','Tr')"><i>📲</i>Transf.</div>
+        </div>
+        <input type="hidden" id="v-pag" value="Ef">
+        <button class="btn-main" style="background:var(--gn)" onclick="saveVenta()">✓ REGISTRAR VENTA</button>
     </div>
 </div>
 
 <div class="screen" id="sc-gastos">
     <div class="card">
-        <h2>💸 Registro de Gastos</h2>
-        <div class="field"><label>Descripción</label><input type="text" id="g-desc"></div>
-        <div class="field"><label>Monto</label><input type="number" id="g-monto"></div>
-        <div class="field"><label>Pagado con:</label>
-            <div class="grid-btns">
-                <div class="sel-btn active" onclick="selBtn(this, 'g-pago', 'Efectivo')">Efectivo</div>
-                <div class="sel-btn" onclick="selBtn(this, 'g-pago', 'Transferencia')">Transf.</div>
-                <div class="sel-btn" onclick="selBtn(this, 'g-pago', 'Klar')">Klar</div>
-            </div>
-            <input type="hidden" id="g-pago" value="Efectivo">
+        <h2>💸 Registro de Gasto</h2>
+        <div class="field"><label>Fecha</label><input type="date" id="g-fecha"></div>
+        <div class="field"><label>Descripción</label><input type="text" id="g-d"></div>
+        <div class="field"><label>Monto</label><input type="number" id="g-m"></div>
+        <label>Pagado con:</label>
+        <div class="grid-btns">
+            <div class="sel-btn active" onclick="selBtn(this,'g-p','Ef')">Efectivo</div>
+            <div class="sel-btn" onclick="selBtn(this,'g-p','Tr')">Transf.</div>
+            <div class="sel-btn" onclick="selBtn(this,'g-p','Kl')">Klar</div>
         </div>
-        <button class="btn-main" style="background:var(--re)" onclick="saveGasto()">✓ REGISTRAR GASTO</button>
+        <input type="hidden" id="g-p" value="Ef">
+        <button class="btn-main" style="background:var(--re)" onclick="saveGasto()">✓ GUARDAR GASTO</button>
     </div>
 </div>
 
 <div class="screen" id="sc-check">
-    <h2>✅ Tablero de Control Final</h2>
-    <div id="checklist-render"></div>
+    <h2>✅ Tablero de Control Semáforo</h2>
+    <div id="check-render"></div>
 </div>
 
 <nav class="tabs">
     <button class="tab active" onclick="nav('home')"><span class="ti">🏠</span><span class="tl">Inicio</span></button>
+    <button class="tab" onclick="nav('prod')"><span class="ti">🧊</span><span class="tl">Stock</span></button>
     <button class="tab" onclick="nav('ventas')"><span class="ti">🚚</span><span class="tl">Ventas</span></button>
     <button class="tab" onclick="nav('gastos')"><span class="ti">💸</span><span class="tl">Gastos</span></button>
     <button class="tab" onclick="nav('check')"><span class="ti">✅</span><span class="tl">Check</span></button>
 </nav>
 
 <script>
-    // Datos del Checklist Completo
-    const checklistConfig = [
-        { g: "Diario - Operación", t: [
-            {n: "Producción de hielo", m: "100% bolsas", r: "Robert"},
-            {n: "Ventas y entregas", m: "Todo registrado", r: "Robert"},
-            {n: "Conciliación Prod vs Entrega", m: "Diferencia < 2%", r: "Robert"},
-            {n: "Limpieza área producción/embolsado", m: "Área limpia", r: "Robert"},
-            {n: "Checklist camioneta", m: "Llantas/Luces/Frenos", r: "Robert"},
-            {n: "Registro gastos del día", m: "Combustible/Pagos", r: "Jeydi"}
-        ]},
-        { g: "Diario - Calidad (Parámetros)", t: [
-            {n: "Cloro residual / TDS / pH", m: "En rango", r: "Robert"},
-            {n: "Dureza / Conductividad", m: "Sin variaciones", r: "Robert"},
-            {n: "Lámpara UV / Ozono", m: "Funcionando", r: "Robert"}
+    const checkConfig = [
+        { g: "Diario", t: [
+            {n:"Registro de producción", m:"100% bolsas", r:"Robert"},
+            {n:"Registro de ventas/entregas", m:"Todo registrado", r:"Robert"},
+            {n:"Limpieza área producción", m:"Área limpia", r:"Robert"},
+            {n:"Checklist camioneta", m:"Llantas/Luces/Gas", r:"Robert"},
+            {n:"Parámetros: Cloro/TDS/pH", m:"En rango", r:"Robert"},
+            {n:"Registro gastos del día", m:"Todo capturado", r:"Jeydi"}
         ]},
         { g: "Semanal", t: [
-            {n: "Retro-lavado planta", m: "Sin omisiones", r: "Robert"},
-            {n: "Revisión Rotoplas", m: "Limpiar si sucio", r: "Robert"},
-            {n: "Auditoría Ventas vs Efectivo", m: "Sin diferencias", r: "Jeydi"}
+            {n:"Retro-lavado planta", m:"Sin omisiones", r:"Robert"},
+            {n:"Revisión Rotoplas", m:"Limpiar si sucio", r:"Robert"},
+            {n:"Inventario físico hielo", m:"Cuadre 100%", r:"Robert+Jeydi"}
         ]},
         { g: "Mensual / Anual", t: [
-            {n: "Apartado Mantenimiento", m: "Min $2000 mquina", r: "Jeydi"},
-            {n: "Contratación personal extra", m: "Si es necesario", r: "Roberto"},
-            {n: "Servicio Mayor Máquina", m: "Anual completo", r: "Técnico"}
+            {n:"Apartado Mantenimiento", m:"$2000 min", r:"Jeydi"},
+            {n:"Contratación personal extra", m:"Si aplica", r:"Roberto"},
+            {n:"Servicio Mayor Máquina", m:"Anual técnico", r:"Técnico"}
         ]}
     ];
 
-    let db = JSON.parse(localStorage.getItem('hielitos_final_db')) || {ventas:[], gastos:[], checks:{}};
+    let db = JSON.parse(localStorage.getItem('hh_full_v3')) || {inv:{cubo:0, cili:0}, ventas:[], gastos:[], checks:{}};
 
     function nav(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -179,91 +214,83 @@
         document.getElementById(hid).value = val;
     }
 
+    function calcV() {
+        const c = parseFloat(document.getElementById('v-c').value) || 0;
+        const p = parseFloat(document.getElementById('v-p').value) || 0;
+        document.getElementById('v-t').value = "$" + (c * p);
+    }
+
+    function saveProd() {
+        const t = document.getElementById('p-t').value;
+        const a = document.getElementById('p-a').value;
+        const c = parseInt(document.getElementById('p-c').value) || 0;
+        if(a === 'sum') db.inv[t] += c; else db.inv[t] -= c;
+        save(); alert("Inventario actualizado");
+    }
+
     function saveVenta() {
-        const v = {
-            f: new Date().toLocaleDateString('en-CA'), 
-            cli: document.getElementById('v-cli').value,
-            c: parseFloat(document.getElementById('v-cant').value) || 0,
-            p: document.getElementById('v-pago').value,
-            m: (parseFloat(document.getElementById('v-cant').value) || 0) * 15 // Precio base 15
-        };
-        db.ventas.push(v);
-        save(); alert("Venta registrada");
+        const c = parseFloat(document.getElementById('v-c').value) || 0;
+        const v = {f: document.getElementById('v-fecha').value, cli: document.getElementById('v-cli').value, m: c * 15, p: document.getElementById('v-pag').value};
+        db.ventas.push(v); save(); alert("Venta registrada");
     }
 
     function saveGasto() {
-        const g = {
-            f: new Date().toLocaleDateString('en-CA'),
-            d: document.getElementById('g-desc').value,
-            m: parseFloat(document.getElementById('g-monto').value) || 0,
-            p: document.getElementById('g-pago').value
-        };
-        db.gastos.push(g);
-        save(); alert("Gasto registrado");
+        const g = {f: document.getElementById('g-fecha').value, d: document.getElementById('g-d').value, m: parseFloat(document.getElementById('g-m').value)||0, p: document.getElementById('g-p').value};
+        db.gastos.push(g); save(); alert("Gasto registrado");
     }
 
     function renderCheck() {
-        const area = document.getElementById('checklist-render');
+        const area = document.getElementById('check-render');
         area.innerHTML = "";
-        checklistConfig.forEach(grupo => {
-            let h = `<h3>${grupo.g}</h3>`;
+        checkConfig.forEach(grupo => {
+            let h = `<div class="check-section"><h2>${grupo.g}</h2>`;
             grupo.t.forEach(t => {
                 const s = db.checks[t.n] || {v:''};
-                h += `
-                <div class="check-card">
+                h += `<div class="check-card">
                     <div class="check-name">${t.n}</div>
                     <div class="check-meta">Meta: ${t.m} | Responsable: ${t.r}</div>
                     <div class="sem">
-                        <div class="sem-opt g ${s.v==='g'?'active':''}" onclick="setS('${t.n}','g')">OK</div>
-                        <div class="sem-opt y ${s.v==='y'?'active':''}" onclick="setS('${t.n}','y')">ALERTA</div>
+                        <div class="sem-opt g ${s.v==='g'?'active':''}" onclick="setS('${t.n}','g')">LISTO</div>
+                        <div class="sem-opt y ${s.v==='y'?'active':''}" onclick="setS('${t.n}','y')">PEND.</div>
                         <div class="sem-opt r ${s.v==='r'?'active':''}" onclick="setS('${t.n}','r')">FALLA</div>
                     </div>
-                    <textarea placeholder="Comentarios..." onchange="setComent('${t.n}', this.value)" style="margin-top:8px; font-size:0.7rem">${s.c || ''}</textarea>
+                    <textarea placeholder="Comentarios..." onchange="setCom('${t.n}', this.value)" style="margin-top:8px; font-size:0.6rem">${s.c || ''}</textarea>
                 </div>`;
             });
-            area.innerHTML += h;
+            area.innerHTML += h + `</div>`;
         });
     }
 
-    function setS(t, v) {
-        if(!db.checks[t]) db.checks[t] = {};
-        db.checks[t].v = v;
-        save(); renderCheck();
-    }
-
-    function setComent(t, c) {
-        if(!db.checks[t]) db.checks[t] = {};
-        db.checks[t].c = c;
-        save();
-    }
+    function setS(t, v) { if(!db.checks[t]) db.checks[t]={}; db.checks[t].v=v; save(); renderCheck(); }
+    function setCom(t, c) { if(!db.checks[t]) db.checks[t]={}; db.checks[t].c=c; save(); }
 
     function updHome() {
-        const vTot = db.ventas.reduce((a,b) => a + b.m, 0);
-        const gCaja = db.gastos.filter(x => x.p !== 'Klar').reduce((a,b) => a + b.m, 0);
-        const gKlar = db.gastos.filter(x => x.p === 'Klar').reduce((a,b) => a + b.m, 0);
-
-        document.getElementById('res-ventas').innerText = "$" + vTot;
-        document.getElementById('res-gastos').innerText = "$" + gCaja;
-        document.getElementById('res-klar').innerText = "$" + gKlar;
-        document.getElementById('res-util').innerText = "$" + (vTot - gCaja - gKlar);
+        document.getElementById('st-cubo').innerText = db.inv.cubo;
+        document.getElementById('st-cili').innerText = db.inv.cili;
+        const vT = db.ventas.reduce((a,b)=>a+b.m,0);
+        const gC = db.gastos.filter(x=>x.p!=='Kl').reduce((a,b)=>a+b.m,0);
+        const gK = db.gastos.filter(x=>x.p==='Kl').reduce((a,b)=>a+b.m,0);
+        document.getElementById('res-ventas').innerText = "$"+vT;
+        document.getElementById('res-gastos').innerText = "$"+gC;
+        document.getElementById('res-klar').innerText = "$"+gK;
+        document.getElementById('res-util').innerText = "$"+(vT-gC-gK);
     }
 
     function verReporteDia() {
-        const fecha = document.getElementById('rep-fecha').value;
-        const area = document.getElementById('reporte-area');
-        const vDia = db.ventas.filter(x => x.f === fecha);
-        const gDia = db.gastos.filter(x => x.f === fecha);
-        
-        area.innerHTML = `
-            <b>Ventas:</b> ${vDia.length} ($${vDia.reduce((a,b)=>a+b.m,0)})<br>
-            <b>Gastos:</b> ${gDia.length} ($${gDia.reduce((a,b)=>a+b.m,0)})<br>
-            <small>Consulta la base de datos para detalles específicos.</small>
+        const f = document.getElementById('rep-fecha').value;
+        const vD = db.ventas.filter(x=>x.f===f);
+        const gD = db.gastos.filter(x=>x.f===f);
+        document.getElementById('reporte-area').innerHTML = `
+            <b>Ventas:</b> ${vD.length} ($${vD.reduce((a,b)=>a+b.m,0)})<br>
+            <b>Gastos:</b> ${gD.length} ($${gD.reduce((a,b)=>a+b.m,0)})<br>
+            <small>Consulta la base de datos para detalles.</small>
         `;
     }
 
-    function save() { localStorage.setItem('hielitos_final_db', JSON.stringify(db)); updHome(); }
+    function save() { localStorage.setItem('hh_full_v3', JSON.stringify(db)); updHome(); }
     
-    document.getElementById('header-date').innerText = new Date().toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+    const h = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(i=>i.value=h);
     updHome();
 </script>
 </body>

@@ -21,9 +21,11 @@ const OLDKEY='hielitos_ahh_db_v2';
 const money=n=>'$'+Number(n||0).toLocaleString('es-MX');
 const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
 const blank={stock:{Cubo:0,Cilindro:0},movements:[],sales:[],expenses:[],maintenance:[],checks:{},__updatedAt:0};
-const CLOUD_URL='https://api.jsonbin.io/v3/b/69feb242250b1311c3248f93';
-const CLOUD_KEY='$2a$10$A0o/8eCj9H3xrMypFcrB/uK8Wv2vxVZWRDmFjUOmp3yIdZCeKXZWe';
-let syncTimer=null, isSyncing=false;
+const SUPABASE_URL='https://hdiugadrnvepalrxjljq.supabase.co';
+const SUPABASE_KEY='sb_publishable_aXOSFoHgUsmwPG-FaGvReQ_fhDFNrrR';
+const SUPABASE_TABLE='hielitos_data';
+const SUPABASE_API=SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/'+SUPABASE_TABLE;
+let syncTimer=null, isSyncing=false, cloudRowId=null;
 function cloneBlank(){return JSON.parse(JSON.stringify(blank));}
 function normalize(x){
   let d=(x&&typeof x==='object'&&!Array.isArray(x))?x:cloneBlank();
@@ -44,18 +46,36 @@ let db=normalize(JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDK
 function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
 function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
 function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
+async function fetchRemoteDB(){
+  const r=await fetch(SUPABASE_API+'?select=id,data&order=created_at.desc&limit=1',{
+    headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},cache:'no-store'
+  });
+  if(!r.ok) throw new Error('No se pudo leer Supabase: '+r.status);
+  const rows=await r.json();
+  if(rows && rows.length){cloudRowId=rows[0].id; return normalize(rows[0].data||{});}
+  cloudRowId=null; return null;
+}
+async function uploadRemoteDB(){
+  const body=JSON.stringify({data:db});
+  const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=representation'};
+  let r;
+  if(cloudRowId){
+    r=await fetch(SUPABASE_API+'?id=eq.'+encodeURIComponent(cloudRowId),{method:'PATCH',headers,body});
+  }else{
+    r=await fetch(SUPABASE_API,{method:'POST',headers,body});
+  }
+  if(!r.ok) throw new Error('No se pudo guardar Supabase: '+r.status);
+  const rows=await r.json().catch(()=>[]); if(rows && rows[0]?.id) cloudRowId=rows[0].id;
+}
 async function syncNow(silent=false){
   if(isSyncing) return; isSyncing=true; setOnlineStatus('🔄 Sincronizando');
   try{
-    let r=await fetch(CLOUD_URL+'/latest',{headers:{'X-Master-Key':CLOUD_KEY,'X-Bin-Meta':'false'},cache:'no-store'});
-    if(r.ok){
-      let remoteRaw=await r.json(); let remote=normalize(remoteRaw?.db||remoteRaw);
-      db=normalize(newer(db,remote));
-    }
+    const remote=await fetchRemoteDB();
+    if(remote){ db=normalize(newer(db,remote)); }
     db.__updatedAt=Date.now(); persistLocal(); recalcStock(); render();
-    await fetch(CLOUD_URL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':CLOUD_KEY},body:JSON.stringify({app:'hielitos-ahh-pwa',version:'v5',db})});
-    setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado');
-  }catch(e){setOnlineStatus('🟡 Local'); if(!silent) toast('⚠️ Guardado local, sin nube');}
+    await uploadRemoteDB();
+    setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado con Supabase');
+  }catch(e){console.error(e); setOnlineStatus('🟡 Local'); if(!silent) toast('⚠️ Guardado local; revisa permisos Supabase');}
   isSyncing=false;
 }
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){db=normalize(JSON.parse(e.newValue));recalcStock();render();}});
@@ -128,7 +148,7 @@ function render(){
  mantFilters.innerHTML=['Todos','Máquina','Planta','Camioneta','Conservador'].map(f=>`<button onclick="renderMant('${f}')">${f}</button>`).join('');
  renderMant('Todos');
  renderTasks();
- allData.innerHTML=item('Registros totales',`Ventas: ${db.sales.length} · Gastos: ${db.expenses.length} · Mant.: ${db.maintenance.length} · Mov.: ${db.movements.length}`,'LocalStorage')
+ allData.innerHTML=item('Registros totales',`Ventas: ${db.sales.length} · Gastos: ${db.expenses.length} · Mant.: ${db.maintenance.length} · Mov.: ${db.movements.length}`,'Supabase + respaldo local')
 }
 function renderMant(f='Todos'){mantList.innerHTML=db.maintenance.map((x,i)=>({x,i})).filter(({x})=>f==='Todos'||x.equipo===f).slice(-30).reverse().map(({x,i})=>item(`🔧 ${x.equipo} · ${x.tipo}`,`${x.desc} · Técnico: ${x.tech||'-'} · Costo ${money(x.cost)}`,x.date,`<button class="mini" onclick="editMant(${i})">Editar</button><button class="mini bad" onclick="deleteMant(${i})">Eliminar</button>`)).join('')||item('Sin registros','No hay mantenimientos','')}
 function downloadCSV(){let rows=[['Tabla','Fecha','Concepto','Tipo','Cantidad','Monto','Cobrado','Debe','Método','Detalle']];db.sales.forEach(s=>rows.push(['Ventas',s.date,s.client,s.tipo,s.qty,s.total,s.paid,s.debt,s.pay,s.comment||'']));db.expenses.forEach(e=>rows.push(['Gastos',e.date,e.provider,'','',e.amount,'','',e.method,'Facturado '+e.invoice]));db.movements.forEach(m=>rows.push(['Stock',m.date,m.mov,m.tipo,m.qty,'','','','',`Delta ${m.delta}; Comentarios: ${m.comment||''}`]));db.maintenance.forEach(m=>rows.push(['Mantenimiento',m.date,m.equipo,m.tipo,'',m.cost,'','','',m.desc]));Object.values(db.checks).forEach(c=>{let t=TASKS[c.idx];rows.push(['Checklist',c.date,t?.actividad||'',t?.freq||'',c.done?'OK':'Pendiente','','','','',c.comment||''])});let csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='hielitos_ahh_datos_'+today()+'.csv';a.click();}

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>HIELITOS AHH!!</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F0F7FF;--su:#fff;--s2:#E8F2FF;--pr:#0066CC;--pl:#E0EEFF;--cy:#00B8D9;--gn:#00875A;--gl:#E3FCEF;--ye:#FF8B00;--yl:#FFFAE6;--re:#DE350B;--rl:#FFEBE6;--tx:#172B4D;--t2:#5E6C84;--t3:#97A0AF;--bd:#DFE1E6;--r:16px;--rs:10px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.topbar{background:var(--pr);padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,102,204,.3)}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#fff}.logo span{color:#7EC8FF}
+.tr{display:flex;align-items:center;gap:.75rem}
+.sp{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);padding:4px 10px;border-radius:20px;font-size:.65rem;color:#fff;font-weight:600}
+.sd{width:7px;height:7px;border-radius:50%;background:#7EC8FF;flex-shrink:0}
+.sd.ok{background:#5EE8A0}.sd.err{background:#FF6B6B}.sd.sy{background:#FFD166;animation:pu 1s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+.td{font-size:.65rem;color:rgba(255,255,255,.65);text-align:right}.td strong{display:block;color:#fff;font-size:.78rem}
+.tabs{display:flex;background:var(--su);border-top:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.55rem .2rem .45rem;cursor:pointer;border:none;background:transparent;gap:2px;transition:all .2s}
+.ti{font-size:1.35rem;line-height:1}.tl{font-size:.58rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.tab.active .tl{color:var(--pr)}.tab.active .ti{transform:translateY(-2px)}
+.screen{display:none;flex:1;overflow-y:auto;padding:1.1rem;gap:1rem;flex-direction:column}
+.screen.active{display:flex}
+.card{background:var(--su);border-radius:var(--r);box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden}
+.ch{padding:.9rem 1.1rem .7rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.ct{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;color:var(--tx);display:flex;align-items:center;gap:.4rem}
+.cb{padding:1.1rem}
+.hg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.hs{background:var(--su);border-radius:var(--r);padding:1.1rem;box-shadow:0 2px 16px rgba(0,0,0,.08);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.hs:active{transform:scale(.97)}
+.hs::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.hs.bl::before{background:var(--pr)}.hs.gn::before{background:var(--gn)}.hs.ye::before{background:var(--ye)}.hs.re::before{background:var(--re)}
+.si{font-size:1.7rem;margin-bottom:.4rem}
+.sn{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;line-height:1}
+.sn.bl{color:var(--pr)}.sn.gn{color:var(--gn)}.sn.ye{color:var(--ye)}.sn.re{color:var(--re)}
+.sl{font-size:.68rem;color:var(--t2);margin-top:.25rem;font-weight:500}
+.qg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.65rem}
+.qb{background:var(--pl);border:none;border-radius:var(--rs);padding:.9rem .4rem;cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.35rem}
+.qb:active{transform:scale(.95);background:var(--pr)}.qb:active .ql{color:#fff}
+.qi{font-size:1.4rem}.ql{font-size:.62rem;font-weight:600;color:var(--pr);text-transform:uppercase;letter-spacing:.5px}
+.fr{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.9rem}
+.fr:last-child{margin-bottom:0}
+.fl{font-size:.7rem;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.fi,.fs,.fta{border:2px solid var(--bd);border-radius:var(--rs);padding:.7rem .9rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;color:var(--tx);background:var(--su);outline:none;transition:border-color .2s;width:100%}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--pr)}
+.fta{resize:none;min-height:75px}
+.fri{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.step{display:flex;align-items:center;border:2px solid var(--bd);border-radius:var(--rs);overflow:hidden;background:var(--su)}
+.sbtn{width:50px;height:50px;border:none;background:var(--s2);color:var(--pr);font-size:1.3rem;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sbtn:active{background:var(--pr);color:#fff}
+.sv{flex:1;text-align:center;font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--tx);border:none;outline:none;background:transparent;width:0}
+.btn{background:var(--pr);color:#fff;border:none;border-radius:var(--rs);padding:.9rem;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;width:100%;transition:all .2s;box-shadow:0 4px 12px rgba(0,102,204,.3)}
+.btn:active{transform:scale(.98)}.btn.g{background:var(--gn)}.btn.r{background:var(--re)}.btn.y{background:var(--ye)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.badge.gn{background:var(--gl);color:var(--gn)}.badge.ye{background:var(--yl);color:var(--ye)}.badge.re{background:var(--rl);color:var(--re)}.badge.bl{background:var(--pl);color:var(--pr)}
+.rl{display:flex;flex-direction:column}
+.ri{display:flex;align-items:flex-start;justify-content:space-between;padding:.8rem 1.1rem;border-bottom:1px solid var(--bd);gap:.65rem}
+.ri:last-child{border-bottom:none}
+.rm{flex:1}.rtt{font-weight:600;font-size:.82rem;color:var(--tx)}.rsb{font-size:.7rem;color:var(--t2);margin-top:2px}
+.rtm{font-size:.62rem;color:var(--t3);white-space:nowrap}
+.sem{display:flex;gap:.45rem}
+.so{flex:1;padding:.65rem;border:2px solid var(--bd);border-radius:var(--rs);text-align:center;cursor:pointer;transition:all .2s;font-size:.7rem;font-weight:600;color:var(--t2)}
+.so.g.active{border-color:var(--gn);background:var(--gl);color:var(--gn)}
+.so.y.active{border-color:var(--ye);background:var(--yl);color:var(--ye)}
+.so.r.active{border-color:var(--re);background:var(--rl);color:var(--re)}
+.toast{position:fixed;top:75px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--tx);color:#fff;padding:.65rem 1.4rem;border-radius:30px;font-size:.82rem;font-weight:600;opacity:0;transition:all .3s;z-index:999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+.mbg.open{display:flex}
+.modal{background:var(--su);border-radius:var(--r) var(--r) 0 0;padding:1.4rem;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;animation:su .3s ease}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mt{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between}
+.mc{background:var(--bd);border:none;border-radius:50%;width:28px;height:28px;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.9rem}
+.tb{padding:.8rem;border:2px solid var(--bd);border-radius:var(--rs);text-align:center;cursor:pointer;transition:all .2s;background:var(--su)}
+.ti2{font-size:1.3rem;margin-bottom:.25rem}.tl2{font-size:.7rem;font-weight:600;color:var(--t2)}
+.tb.active{border-color:var(--pr);background:var(--pl)}.tb.active .tl2{color:var(--pr)}
+.hf{display:flex;gap:.45rem;margin-bottom:.9rem;overflow-x:auto;padding-bottom:3px}
+.fc{padding:.35rem .85rem;border-radius:20px;border:1.5px solid var(--bd);font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;background:var(--su);color:var(--t2)}
+.fc.active{background:var(--pr);border-color:var(--pr);color:#fff}
+.empty{text-align:center;padding:2rem 1rem;color:var(--t3)}
+.empty .ei{font-size:2.2rem;margin-bottom:.6rem}.empty p{font-size:.8rem}
+.lov{position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem}
+.lov.hidden{display:none}
+.spin{width:38px;height:38px;border:3px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lt{font-family:'Syne',sans-serif;font-weight:700;color:var(--pr);font-size:.88rem}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="lov" id="lov"><div class="spin"></div><div class="lt">Conectando con la nube...</div></div>
+
+<div class="topbar">
+  <div><div class="logo">HIELITOS <span>AHH!!</span></div></div>
+  <div class="tr">
+    <div class="sp"><div class="sd" id="sd"></div><span id="sl">...</span></div>
+    <div class="td" id="td"></div>
+  </div>
+</div>
+
+<div class="screen active" id="screen-home">
+  <div class="hg">
+    <div class="hs bl" onclick="goTo('produccion')"><div class="si">🧊</div><div class="sn bl" id="h-b">0</div><div class="sl">Bolsas hoy</div></div>
+    <div class="hs gn" onclick="goTo('ventas')"><div class="si">💰</div><div class="sn gn" id="h-c">$0</div><div class="sl">Cobrado hoy</div></div>
+    <div class="hs ye" onclick="goTo('ventas')"><div class="si">⚠️</div><div class="sn ye" id="h-p">0</div><div class="sl">Pendientes</div></div>
+    <div class="hs re" onclick="goTo('mantenimiento')"><div class="si">🔧</div><div class="sn re" id="h-f">0</div><div class="sl">Fallas activas</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">⚡ Acciones rápidas</div></div>
+    <div class="cb">
+      <div class="qg">
+        <button class="qb" onclick="openM('m-prod')"><div class="qi">🧊</div><div class="ql">Producción</div></button>
+        <button class="qb" onclick="openM('m-ent')"><div class="qi">🚚</div><div class="ql">Entrega</div></button>
+        <button class="qb" onclick="openM('m-cobro')"><div class="qi">💵</div><div class="ql">Cobro</div></button>
+        <button class="qb" onclick="openM('m-limp')"><div class="qi">🧹</div><div class="ql">Limpieza</div></button>
+        <button class="qb" onclick="openM('m-falla')"><div class="qi">🚨</div><div class="ql">Falla</div></button>
+        <button class="qb" onclick="openM('m-retro')"><div class="qi">💧</div><div class="ql">Retro-lavado</div></button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📋 Últimos registros</div><button onclick="syncNow()" style="background:var(--pl);border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;color:var(--pr);cursor:pointer;font-weight:600">↻ Sync</button></div>
+    <div class="rl" id="h-rec"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-produccion">
+  <div class="card">
+    <div class="ch"><div class="ct">🧊 Registrar Producción</div></div>
+    <div class="cb">
+      <div class="fr"><div class="fl">Tipo de hielo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+          <div class="tb active" id="tc-cubo" onclick="selT('cubo')"><div class="ti2">🟦</div><div class="tl2">Cubo</div></div>
+          <div class="tb" id="tc-cilindro" onclick="selT('cilindro')"><div class="ti2">⚪</div><div class="tl2">Cilindro</div></div>
+        </div>
+      </div>
+      <div class="fr"><div class="fl">Bolsas producidas</div>
+        <div class="step"><button class="sbtn" onclick="sc('p-b',-10)">−</button><input class="sv" id="p-b" type="number" value="0" min="0"><button class="sbtn" onclick="sc('p-b',10)">+</button></div>
+      </div>
+      <div class="fr"><div class="fl">Bolsas entregadas</div>
+        <div class="step"><button class="sbtn" onclick="sc('p-e',-10)">−</button><input class="sv" id="p-e" type="number" value="0" min="0"><button class="sbtn" onclick="sc('p-e',10)">+</button></div>
+      </div>
+      <div class="fr"><div class="fl">Estado máquina</div>
+        <div class="sem"><div class="so g active" onclick="selS(this,'p-maq')">✅ Normal</div><div class="so y" onclick="selS(this,'p-maq')">⚠️ Irregular</div><div class="so r" onclick="selS(this,'p-maq')">🔴 Falla</div></div>
+        <input type="hidden" id="p-maq" value="g">
+      </div>
+      <div class="fr"><div class="fl">Quién registra</div><select class="fs" id="p-q"><option>Robert</option><option>Hermana</option><option>María</option></select></div>
+      <div class="fr"><div class="fl">Observaciones</div><textarea class="fta" id="p-n" placeholder="Temperatura, ruidos, novedades..."></textarea></div>
+      <button class="btn g" onclick="saveProd()">✓ Guardar producción</button>
+    </div>
+  </div>
+  <div class="card"><div class="ch"><div class="ct">📊 Historial producción</div></div><div class="rl" id="list-prod"></div></div>
+</div>
+
+<div class="screen" id="screen-ventas">
+  <div class="card">
+    <div class="ch"><div class="ct">🚚 Nueva Entrega / Cobro</div></div>
+    <div class="cb">
+      <div class="fr"><div class="fl">Cliente</div><input class="fi" id="v-cli" placeholder="Nombre del cliente" list="clist"><datalist id="clist"></datalist></div>
+      <div class="fri">
+        <div class="fr" style="margin:0"><div class="fl">Bolsas</div>
+          <div class="step"><button class="sbtn" onclick="sc('v-b',-1)">−</button><input class="sv" id="v-b" type="number" value="0" min="0"><button class="sbtn" onclick="sc('v-b',1)">+</button></div>
+        </div>
+        <div class="fr" style="margin:0"><div class="fl">Precio/bolsa ($)</div><input class="fi" id="v-pr" type="number" placeholder="0" style="font-size:.95rem;text-align:center"></div>
+      </div>
+      <div class="fr"><div class="fl">Pago</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem">
+          <div class="tb active" id="pg-ef" onclick="selPg('ef')"><div class="ti2">💵</div><div class="tl2">Efectivo</div></div>
+          <div class="tb" id="pg-tr" onclick="selPg('tr')"><div class="ti2">📲</div><div class="tl2">Transferencia</div></div>
+          <div class="tb" id="pg-pe" onclick="selPg('pe')"><div class="ti2">⏳</div><div class="tl2">Pendiente</div></div>
+        </div>
+        <input type="hidden" id="v-pg" value="ef">
+      </div>
+      <div class="fr" id="v-mr"><div class="fl">Monto cobrado ($)</div><input class="fi" id="v-mn" type="number" placeholder="0" style="text-align:center"></div>
+      <div class="fr"><div class="fl">Quién registra</div><select class="fs" id="v-q"><option>Robert</option><option>Hermana</option><option>María</option></select></div>
+      <button class="btn" onclick="saveVenta()">✓ Registrar entrega</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📋 Entregas</div><div class="badge bl" id="v-tot">$0</div></div>
+    <div class="rl" id="list-v"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-mantenimiento">
+  <div class="card">
+    <div class="ch"><div class="ct">🔧 Mantenimiento / Falla</div></div>
+    <div class="cb">
+      <div class="fr"><div class="fl">Equipo</div>
+        <div class="tg">
+          <div class="tb active" id="eq-maq" onclick="selEq('maq')"><div class="ti2">🧊</div><div class="tl2">Máquina de hielo</div></div>
+          <div class="tb" id="eq-pl" onclick="selEq('pl')"><div class="ti2">💧</div><div class="tl2">Planta purificadora</div></div>
+          <div class="tb" id="eq-cam" onclick="selEq('cam')"><div class="ti2">🚚</div><div class="tl2">Camioneta</div></div>
+          <div class="tb" id="eq-con" onclick="selEq('con')"><div class="ti2">📦</div><div class="tl2">Conservador</div></div>
+        </div>
+      </div>
+      <div class="fr"><div class="fl">Tipo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem">
+          <div class="tb active" id="rg-prev" onclick="selRg('prev')"><div class="ti2">✅</div><div class="tl2">Preventivo</div></div>
+          <div class="tb" id="rg-corr" onclick="selRg('corr')"><div class="ti2">🔨</div><div class="tl2">Correctivo</div></div>
+          <div class="tb" id="rg-falla" onclick="selRg('falla')"><div class="ti2">🚨</div><div class="tl2">Falla</div></div>
+        </div>
+      </div>
+      <div class="fr"><div class="fl">Descripción</div><textarea class="fta" id="m-d" placeholder="¿Qué se hizo o qué falló?"></textarea></div>
+      <div class="fri">
+        <div class="fr" style="margin:0"><div class="fl">Técnico</div><input class="fi" id="m-t" placeholder="Nombre"></div>
+        <div class="fr" style="margin:0"><div class="fl">Costo ($)</div><input class="fi" id="m-c" type="number" placeholder="0"></div>
+      </div>
+      <div class="fr"><div class="fl">Estado del equipo</div>
+        <div class="sem"><div class="so g active" onclick="selS(this,'m-e')">✅ Operando</div><div class="so y" onclick="selS(this,'m-e')">⚠️ Parcial</div><div class="so r" onclick="selS(this,'m-e')">🔴 Fuera de servicio</div></div>
+        <input type="hidden" id="m-e" value="g">
+      </div>
+      <button class="btn y" onclick="saveMant()">✓ Guardar registro</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📋 Historial</div></div>
+    <div class="hf">
+      <div class="fc active" onclick="fM('todos',this)">Todos</div>
+      <div class="fc" onclick="fM('maq',this)">Máquina</div>
+      <div class="fc" onclick="fM('pl',this)">Planta</div>
+      <div class="fc" onclick="fM('cam',this)">Camioneta</div>
+      <div class="fc" onclick="fM('con',this)">Conservador</div>
+    </div>
+    <div class="rl" id="list-m"></div>
+  </div>
+</div>
+
+<div class="screen" id="screen-historial">
+  <div class="card">
+    <div class="ch"><div class="ct">🗂 Base de datos</div><span class="badge bl" id="tot">0</span></div>
+    <div class="cb" style="padding-bottom:.5rem">
+      <div class="hf">
+        <div class="fc active" onclick="fH('todos',this)">Todos</div>
+        <div class="fc" onclick="fH('produccion',this)">Producción</div>
+        <div class="fc" onclick="fH('venta',this)">Ventas</div>
+        <div class="fc" onclick="fH('mantenimiento',this)">Mant.</div>
+        <div class="fc" onclick="fH('limpieza',this)">Limpieza</div>
+        <div class="fc" onclick="fH('falla',this)">Fallas</div>
+      </div>
+    </div>
+    <div class="rl" id="list-h"></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📤 Exportar</div></div>
+    <div class="cb" style="display:flex;flex-direction:column;gap:.65rem">
+      <button class="btn" onclick="exportCSV()">📊 Descargar CSV para Excel</button>
+      <button class="btn" style="background:var(--t2)" onclick="syncNow()">↻ Sincronizar ahora</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="goTo('home')" id="tab-home"><div class="ti">🏠</div><div class="tl">Inicio</div></button>
+  <button class="tab" onclick="goTo('produccion')" id="tab-produccion"><div class="ti">🧊</div><div class="tl">Producción</div></button>
+  <button class="tab" onclick="goTo('ventas')" id="tab-ventas"><div class="ti">🚚</div><div class="tl">Ventas</div></button>
+  <button class="tab" onclick="goTo('mantenimiento')" id="tab-mantenimiento"><div class="ti">🔧</div><div class="tl">Mant.</div></button>
+  <button class="tab" onclick="goTo('historial')" id="tab-historial"><div class="ti">🗂</div><div class="tl">Historial</div></button>
+</div>
+
+<div class="mbg" id="m-prod"><div class="modal">
+  <div class="mt">🧊 Producción rápida <button class="mc" onclick="closeM('m-prod')">✕</button></div>
+  <div class="fr"><div class="fl">Bolsas producidas</div><div class="step"><button class="sbtn" onclick="sc('mp-b',-10)">−</button><input class="sv" id="mp-b" type="number" value="0" min="0"><button class="sbtn" onclick="sc('mp-b',10)">+</button></div></div>
+  <div class="fr"><div class="fl">Quién registra</div><select class="fs" id="mp-q"><option>Robert</option><option>Hermana</option><option>María</option></select></div>
+  <button class="btn g" onclick="qProd()">✓ Guardar</button>
+</div></div>
+
+<div class="mbg" id="m-ent"><div class="modal">
+  <div class="mt">🚚 Entrega rápida <button class="mc" onclick="closeM('m-ent')">✕</button></div>
+  <div class="fr"><div class="fl">Cliente</div><input class="fi" id="me-c" placeholder="Nombre del cliente"></div>
+  <div class="fr"><div class="fl">Bolsas</div><div class="step"><button class="sbtn" onclick="sc('me-b',-1)">−</button><input class="sv" id="me-b" type="number" value="0" min="0"><button class="sbtn" onclick="sc('me-b',1)">+</button></div></div>
+  <div class="fr"><div class="fl">¿Pagó?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+      <div class="tb active" id="ep-si" onclick="selMP('si')"><div class="ti2">✅</div><div class="tl2">Sí pagó</div></div>
+      <div class="tb" id="ep-no" onclick="selMP('no')"><div class="ti2">⏳</div><div class="tl2">Pendiente</div></div>
+    </div>
+    <input type="hidden" id="ep-v" value="si">
+  </div>
+  <div class="fr" id="ep-mr"><div class="fl">Monto ($)</div><input class="fi" id="ep-m" type="number" placeholder="0"></div>
+  <div class="fr"><div class="fl">Quién registra</div><select class="fs" id="me-q"><option>Robert</option><option>Hermana</option><option>María</option></select></div>
+  <button class="btn" onclick="qEnt()">✓ Registrar</button>
+</div></div>
+
+<div class="mbg" id="m-cobro"><div class="modal">
+  <div class="mt">💵 Registrar cobro <button class="mc" onclick="closeM('m-cobro')">✕</button></div>
+  <div class="fr"><div class="fl">Cliente</div><input class="fi" id="mc-c" placeholder="Nombre del cliente"></div>
+  <div class="fr"><div class="fl">Monto cobrado ($)</div><input class="fi" id="mc-m" type="number" placeholder="0" style="font-size:1.1rem;text-align:center"></div>
+  <div class="fr"><div class="fl">Forma de pago</div><select class="fs" id="mc-f"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option><option value="oxxo">Oxxo</option></select></div>
+  <button class="btn g" onclick="qCobro()">✓ Registrar cobro</button>
+</div></div>
+
+<div class="mbg" id="m-limp"><div class="modal">
+  <div class="mt">🧹 Limpieza <button class="mc" onclick="closeM('m-limp')">✕</button></div>
+  <div class="fr"><div class="fl">Área</div><select class="fs" id="ml-a"><option value="produccion">Área de producción</option><option value="embolsado">Área de embolsado</option><option value="camioneta">Camioneta</option><option value="conservadores">Conservadores en campo</option><option value="general">General / Todas</option></select></div>
+  <div class="fr"><div class="fl">Quién lo hizo</div><select class="fs" id="ml-q"><option>Robert</option><option>Hermana</option><option>María</option></select></div>
+  <div class="fr"><div class="fl">Observaciones</div><textarea class="fta" id="ml-n" placeholder="Estado del área..."></textarea></div>
+  <button class="btn" onclick="qLimp()">✓ Registrar limpieza</button>
+</div></div>
+
+<div class="mbg" id="m-falla"><div class="modal">
+  <div class="mt">🚨 Reportar falla <button class="mc" onclick="closeM('m-falla')">✕</button></div>
+  <div class="fr"><div class="fl">Equipo</div><select class="fs" id="mf-e"><option value="maq">Máquina de hielo</option><option value="pl">Planta purificadora</option><option value="cam">Camioneta</option><option value="con">Conservador</option></select></div>
+  <div class="fr"><div class="fl">Descripción de la falla</div><textarea class="fta" id="mf-d" placeholder="¿Qué pasó? ¿Cuándo empezó?"></textarea></div>
+  <button class="btn r" onclick="qFalla()">🚨 Reportar ahora</button>
+</div></div>
+
+<div class="mbg" id="m-retro"><div class="modal">
+  <div class="mt">💧 Retro-lavado <button class="mc" onclick="closeM('m-retro')">✕</button></div>
+  <div class="fr"><div class="fl">Estado del agua</div>
+    <div class="sem"><div class="so g active" onclick="selS(this,'rt-e')">✅ Limpia</div><div class="so y" onclick="selS(this,'rt-e')">⚠️ Regular</div><div class="so r" onclick="selS(this,'rt-e')">🔴 Turbia</div></div>
+    <input type="hidden" id="rt-e" value="g">
+  </div>
+  <div class="fr"><div class="fl">Notas</div><textarea class="fta" id="rt-n" placeholder="Observaciones..."></textarea></div>
+  <button class="btn" style="background:var(--cy)" onclick="qRetro()">💧 Registrar</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BIN='69feb242250b1311c3248f93';
+const KEY='$2a$10$A0o/8eCj9H3xrMypFcrB/uK8Wv2vxVZWRDmFjUOmp3yIdZCeKXZWe';
+const BURL=`https://api.jsonbin.io/v3/b/${BIN}`;
+let db=[],tH='cubo',eqS='maq',rgS='prev',mfF='todos',mhF='todos';
+const EQL={maq:'Máquina',pl:'Planta purificadora',cam:'Camioneta',con:'Conservador'};
+const RGL={prev:'Preventivo',corr:'Correctivo',falla:'Falla'};
+const EB={g:'<span class="badge gn">✅ Ok</span>',y:'<span class="badge ye">⚠️ Parcial</span>',r:'<span class="badge re">🔴 Fuera de servicio</span>'};
+
+function setSS(s){const d=document.getElementById('sd'),l=document.getElementById('sl');d.className='sd '+s;l.textContent=s==='ok'?'En línea ✓':s==='sy'?'Sincronizando...':'Sin conexión';}
+async function fetchDB(){
+  try{setSS('sy');const r=await fetch(BURL+'/latest',{headers:{'X-Master-Key':KEY,'X-Bin-Meta':'false'}});if(!r.ok)throw 0;const d=await r.json();db=Array.isArray(d.records)?d.records:[];localStorage.setItem('hbk',JSON.stringify(db));setSS('ok');return true;}
+  catch(e){setSS('err');const bk=localStorage.getItem('hbk');if(bk)db=JSON.parse(bk);return false;}
+}
+async function pushDB(){
+  try{setSS('sy');localStorage.setItem('hbk',JSON.stringify(db));const r=await fetch(BURL,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':KEY},body:JSON.stringify({records:db})});if(!r.ok)throw 0;setSS('ok');return true;}
+  catch(e){setSS('err');toast('⚠️ Sin conexión — guardado local','#FF8B00');return false;}
+}
+async function syncNow(){await fetchDB();renderAll();toast('✅ Sincronizado','#00875A');}
+function now(){return new Date().toLocaleString('es-MX',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function tsR(){return Date.now();}
+function todayS(){return new Date().toLocaleDateString('es-MX');}
+function goTo(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.getElementById('screen-'+s).classList.add('active');document.getElementById('tab-'+s).classList.add('active');renderAll();}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,c){const t=document.getElementById('toast');t.textContent=msg;t.style.background=c||'#172B4D';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function sc(id,d){const e=document.getElementById(id);e.value=Math.max(0,(parseInt(e.value)||0)+d);}
+function selS(el,hid){el.parentElement.querySelectorAll('.so').forEach(o=>o.classList.remove('active'));el.classList.add('active');document.getElementById(hid).value=el.classList.contains('g')?'g':el.classList.contains('y')?'y':'r';}
+function selT(t){tH=t;['cubo','cilindro'].forEach(x=>document.getElementById('tc-'+x).classList.remove('active'));document.getElementById('tc-'+t).classList.add('active');}
+function selPg(p){['ef','tr','pe'].forEach(x=>document.getElementById('pg-'+x).classList.remove('active'));document.getElementById('pg-'+p).classList.add('active');document.getElementById('v-pg').value=p;document.getElementById('v-mr').style.display=p==='pe'?'none':'flex';}
+function selMP(v){['si','no'].forEach(x=>document.getElementById('ep-'+x).classList.remove('active'));document.getElementById('ep-'+v).classList.add('active');document.getElementById('ep-v').value=v;document.getElementById('ep-mr').style.display=v==='no'?'none':'flex';}
+function selEq(e){eqS=e;['maq','pl','cam','con'].forEach(x=>document.getElementById('eq-'+x).classList.remove('active'));document.getElementById('eq-'+e).classList.add('active');}
+function selRg(r){rgS=r;['prev','corr','falla'].forEach(x=>document.getElementById('rg-'+x).classList.remove('active'));document.getElementById('rg-'+r).classList.add('active');}
+function rHTML(r){
+  let icon='📋',tt='',sb='',badge='';
+  const q=r.quien?`<b style="color:var(--pr)">${r.quien}</b>`:'';
+  if(r.type==='produccion'){icon='🧊';tt=`${r.bolsas} bolsas (${r.tipo})`;sb=`Entregadas:${r.entregadas||0} · ${q}`;badge=EB[r.maq]||'';}
+  else if(r.type==='venta'){icon='🚚';tt=`→ ${r.cliente} · ${r.bolsas} bolsas`;sb=`$${r.monto||0} · ${r.pago==='pe'?'Pendiente':r.pago==='ef'?'Efectivo':'Transf.'} · ${q}`;badge=r.pago==='pe'?'<span class="badge ye">⏳ Pendiente</span>':'<span class="badge gn">✅ Cobrado</span>';}
+  else if(r.type==='cobro'){icon='💵';tt=`Cobro · ${r.cliente}`;sb=`$${r.monto} · ${r.forma}`;badge='<span class="badge gn">✅ Cobrado</span>';}
+  else if(r.type==='mantenimiento'){icon='🔧';tt=`${EQL[r.equipo]} · ${RGL[r.reg]}`;sb=`${(r.desc||'').substring(0,45)} · $${r.costo||0}`;badge=EB[r.estado]||'';}
+  else if(r.type==='limpieza'){icon='🧹';tt=`Limpieza · ${r.area}`;sb=`${q} · ${r.notas||''}`;badge='<span class="badge bl">✅ Registrado</span>';}
+  else if(r.type==='falla'){icon='🚨';tt=`Falla · ${EQL[r.equipo]}`;sb=(r.desc||'').substring(0,55);badge='<span class="badge re">🚨 Falla activa</span>';}
+  else if(r.type==='retro'){icon='💧';tt='Retro-lavado planta';sb=r.notas||'';badge=EB[r.estado]||'';}
+  return `<div class="ri"><div class="rm"><div class="rtt">${icon} ${tt}</div><div class="rsb">${sb} ${badge}</div></div><div class="rtm">${r.ts}</div></div>`;
+}
+function renderAll(){
+  const td=todayS(),tr=db.filter(r=>new Date(r.tsRaw).toLocaleDateString('es-MX')===td);
+  document.getElementById('h-b').textContent=tr.filter(r=>r.type==='produccion').reduce((s,r)=>s+r.bolsas,0);
+  document.getElementById('h-c').textContent='$'+tr.filter(r=>r.type==='venta'||r.type==='cobro').reduce((s,r)=>s+(r.monto||0),0).toLocaleString('es-MX');
+  document.getElementById('h-p').textContent=db.filter(r=>r.type==='venta'&&r.pago==='pe').length;
+  document.getElementById('h-f').textContent=db.filter(r=>(r.type==='falla'||r.type==='mantenimiento')&&r.estado==='r').length;
+  const rec=[...db].sort((a,b)=>b.tsRaw-a.tsRaw).slice(0,8);
+  document.getElementById('h-rec').innerHTML=rec.length?rec.map(rHTML).join(''):'<div class="empty"><div class="ei">📋</div><p>Sin registros aún</p></div>';
+  const lp=[...db].filter(r=>r.type==='produccion').sort((a,b)=>b.tsRaw-a.tsRaw);
+  document.getElementById('list-prod').innerHTML=lp.length?lp.map(rHTML).join(''):'<div class="empty"><div class="ei">🧊</div><p>Sin registros</p></div>';
+  const lv=[...db].filter(r=>r.type==='venta'||r.type==='cobro').sort((a,b)=>b.tsRaw-a.tsRaw);
+  document.getElementById('v-tot').textContent='$'+lv.reduce((s,r)=>s+(r.monto||0),0).toLocaleString('es-MX');
+  document.getElementById('list-v').innerHTML=lv.length?lv.map(rHTML).join(''):'<div class="empty"><div class="ei">🚚</div><p>Sin entregas</p></div>';
+  const lm=[...db].filter(r=>(r.type==='mantenimiento'||r.type==='falla')&&(mfF==='todos'||r.equipo===mfF)).sort((a,b)=>b.tsRaw-a.tsRaw);
+  document.getElementById('list-m').innerHTML=lm.length?lm.map(rHTML).join(''):'<div class="empty"><div class="ei">🔧</div><p>Sin registros</p></div>';
+  const lh=[...db].filter(r=>mhF==='todos'||r.type===mhF).sort((a,b)=>b.tsRaw-a.tsRaw);
+  document.getElementById('list-h').innerHTML=lh.length?lh.map(rHTML).join(''):'<div class="empty"><div class="ei">🗂</div><p>Sin registros</p></div>';
+  document.getElementById('tot').textContent=db.length+' reg.';
+  const cls=[...new Set(db.filter(r=>r.cliente).map(r=>r.cliente))];
+  document.getElementById('clist').innerHTML=cls.map(c=>`<option value="${c}">`).join('');
+}
+function fM(f,el){mfF=f;document.querySelectorAll('#screen-mantenimiento .fc').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAll();}
+function fH(f,el){mhF=f;document.querySelectorAll('#screen-historial .fc').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderAll();}
+function gv(id){return document.getElementById(id);}
+async function saveProd(){
+  const b=parseInt(gv('p-b').value)||0;if(!b){toast('⚠️ Ingresa las bolsas','#DE350B');return;}
+  db.push({type:'produccion',tipo:tH,bolsas:b,entregadas:parseInt(gv('p-e').value)||0,maq:gv('p-maq').value,notas:gv('p-n').value,quien:gv('p-q').value,ts:now(),tsRaw:tsR()});
+  await pushDB();toast('✅ Producción guardada','#00875A');gv('p-b').value=0;gv('p-e').value=0;gv('p-n').value='';renderAll();
+}
+async function saveVenta(){
+  const cli=gv('v-cli').value.trim(),b=parseInt(gv('v-b').value)||0;
+  if(!cli){toast('⚠️ Ingresa el cliente','#DE350B');return;}if(!b){toast('⚠️ Ingresa las bolsas','#DE350B');return;}
+  const pg=gv('v-pg').value;
+  db.push({type:'venta',cliente:cli,bolsas:b,precio:parseFloat(gv('v-pr').value)||0,pago:pg,monto:pg==='pe'?0:(parseFloat(gv('v-mn').value)||0),quien:gv('v-q').value,ts:now(),tsRaw:tsR()});
+  await pushDB();toast(`✅ Entrega a ${cli} registrada`,'#00875A');gv('v-cli').value='';gv('v-b').value=0;gv('v-pr').value='';gv('v-mn').value='';renderAll();
+}
+async function saveMant(){
+  const desc=gv('m-d').value.trim();if(!desc){toast('⚠️ Describe el mantenimiento','#DE350B');return;}
+  db.push({type:'mantenimiento',equipo:eqS,reg:rgS,desc,tecnico:gv('m-t').value,costo:parseFloat(gv('m-c').value)||0,estado:gv('m-e').value,ts:now(),tsRaw:tsR()});
+  await pushDB();toast('✅ Mantenimiento registrado','#FF8B00');gv('m-d').value='';gv('m-t').value='';gv('m-c').value='';renderAll();
+}
+async function qProd(){const b=parseInt(gv('mp-b').value)||0;if(!b){toast('⚠️ Ingresa cantidad','#DE350B');return;}db.push({type:'produccion',tipo:'cubo',bolsas:b,entregadas:0,maq:'g',notas:'Rápido',quien:gv('mp-q').value,ts:now(),tsRaw:tsR()});await pushDB();toast(`✅ ${b} bolsas guardadas`,'#00875A');gv('mp-b').value=0;closeM('m-prod');renderAll();}
+async function qEnt(){const cli=gv('me-c').value.trim(),b=parseInt(gv('me-b').value)||0;if(!cli||!b){toast('⚠️ Completa cliente y bolsas','#DE350B');return;}const ps=gv('ep-v').value;db.push({type:'venta',cliente:cli,bolsas:b,precio:0,pago:ps==='si'?'ef':'pe',monto:ps==='no'?0:(parseFloat(gv('ep-m').value)||0),quien:gv('me-q').value,ts:now(),tsRaw:tsR()});await pushDB();toast(`✅ Entrega a ${cli} registrada`,'#00875A');gv('me-c').value='';gv('me-b').value=0;gv('ep-m').value='';closeM('m-ent');renderAll();}
+async function qCobro(){const cli=gv('mc-c').value.trim(),m=parseFloat(gv('mc-m').value)||0;if(!cli||!m){toast('⚠️ Completa cliente y monto','#DE350B');return;}db.push({type:'cobro',cliente:cli,monto:m,forma:gv('mc-f').value,ts:now(),tsRaw:tsR()});await pushDB();toast(`✅ $${m} cobrado a ${cli}`,'#00875A');gv('mc-c').value='';gv('mc-m').value='';closeM('m-cobro');renderAll();}
+async function qLimp(){db.push({type:'limpieza',area:gv('ml-a').value,quien:gv('ml-q').value,notas:gv('ml-n').value,ts:now(),tsRaw:tsR()});await pushDB();toast('✅ Limpieza registrada','#0066CC');gv('ml-n').value='';closeM('m-limp');renderAll();}
+async function qFalla(){const desc=gv('mf-d').value.trim();if(!desc){toast('⚠️ Describe la falla','#DE350B');return;}db.push({type:'falla',equipo:gv('mf-e').value,desc,estado:'r',ts:now(),tsRaw:tsR()});await pushDB();toast('🚨 Falla reportada','#DE350B');gv('mf-d').value='';closeM('m-falla');renderAll();}
+async function qRetro(){db.push({type:'retro',estado:gv('rt-e').value,notas:gv('rt-n').value,ts:now(),tsRaw:tsR()});await pushDB();toast('💧 Retro-lavado registrado','#00B8D9');gv('rt-n').value='';closeM('m-retro');renderAll();}
+function exportCSV(){
+  if(!db.length){toast('⚠️ Sin registros','#DE350B');return;}
+  const h=['Tipo','Fecha','Quién','Cliente','Bolsas','Monto','Pago','Equipo','Descripción','Estado','Costo'];
+  const rows=db.map(r=>[r.type,r.ts,r.quien||'',r.cliente||'',r.bolsas||'',r.monto||r.costo||'',r.pago||r.forma||'',EQL[r.equipo]||'',r.desc||r.notas||'',r.estado||'',r.costo||'']);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=`hielitos_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(url);
+  toast('📊 CSV descargado','#0066CC');
+}
+document.getElementById('td').innerHTML=`<strong>${new Date().toLocaleDateString('es-MX',{weekday:'long'})}</strong>${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'long'})}`;
+document.querySelectorAll('.mbg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');}));
+setInterval(()=>fetchDB().then(()=>renderAll()),60000);
+(async()=>{await fetchDB();document.getElementById('lov').classList.add('hidden');renderAll();})();
+</script>
+</body>
+</html>

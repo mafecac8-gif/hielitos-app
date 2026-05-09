@@ -155,4 +155,116 @@
             {n: "Revisión Rotoplas", m: "Limpiar si sucio", r: "Robert"},
             {n: "Auditoría Ventas vs Efectivo", m: "Sin diferencias", r: "Jeydi"}
         ]},
-        { g: "Mensual / Anual", t:
+        { g: "Mensual / Anual", t: [
+            {n: "Apartado Mantenimiento", m: "Min $2000 mquina", r: "Jeydi"},
+            {n: "Contratación personal extra", m: "Si es necesario", r: "Roberto"},
+            {n: "Servicio Mayor Máquina", m: "Anual completo", r: "Técnico"}
+        ]}
+    ];
+
+    let db = JSON.parse(localStorage.getItem('hielitos_final_db')) || {ventas:[], gastos:[], checks:{}};
+
+    function nav(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('sc-'+id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        if(id === 'home') updHome();
+        if(id === 'check') renderCheck();
+    }
+
+    function selBtn(el, hid, val) {
+        el.parentElement.querySelectorAll('.sel-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById(hid).value = val;
+    }
+
+    function saveVenta() {
+        const v = {
+            f: new Date().toLocaleDateString('en-CA'), 
+            cli: document.getElementById('v-cli').value,
+            c: parseFloat(document.getElementById('v-cant').value) || 0,
+            p: document.getElementById('v-pago').value,
+            m: (parseFloat(document.getElementById('v-cant').value) || 0) * 15 // Precio base 15
+        };
+        db.ventas.push(v);
+        save(); alert("Venta registrada");
+    }
+
+    function saveGasto() {
+        const g = {
+            f: new Date().toLocaleDateString('en-CA'),
+            d: document.getElementById('g-desc').value,
+            m: parseFloat(document.getElementById('g-monto').value) || 0,
+            p: document.getElementById('g-pago').value
+        };
+        db.gastos.push(g);
+        save(); alert("Gasto registrado");
+    }
+
+    function renderCheck() {
+        const area = document.getElementById('checklist-render');
+        area.innerHTML = "";
+        checklistConfig.forEach(grupo => {
+            let h = `<h3>${grupo.g}</h3>`;
+            grupo.t.forEach(t => {
+                const s = db.checks[t.n] || {v:''};
+                h += `
+                <div class="check-card">
+                    <div class="check-name">${t.n}</div>
+                    <div class="check-meta">Meta: ${t.m} | Responsable: ${t.r}</div>
+                    <div class="sem">
+                        <div class="sem-opt g ${s.v==='g'?'active':''}" onclick="setS('${t.n}','g')">OK</div>
+                        <div class="sem-opt y ${s.v==='y'?'active':''}" onclick="setS('${t.n}','y')">ALERTA</div>
+                        <div class="sem-opt r ${s.v==='r'?'active':''}" onclick="setS('${t.n}','r')">FALLA</div>
+                    </div>
+                    <textarea placeholder="Comentarios..." onchange="setComent('${t.n}', this.value)" style="margin-top:8px; font-size:0.7rem">${s.c || ''}</textarea>
+                </div>`;
+            });
+            area.innerHTML += h;
+        });
+    }
+
+    function setS(t, v) {
+        if(!db.checks[t]) db.checks[t] = {};
+        db.checks[t].v = v;
+        save(); renderCheck();
+    }
+
+    function setComent(t, c) {
+        if(!db.checks[t]) db.checks[t] = {};
+        db.checks[t].c = c;
+        save();
+    }
+
+    function updHome() {
+        const vTot = db.ventas.reduce((a,b) => a + b.m, 0);
+        const gCaja = db.gastos.filter(x => x.p !== 'Klar').reduce((a,b) => a + b.m, 0);
+        const gKlar = db.gastos.filter(x => x.p === 'Klar').reduce((a,b) => a + b.m, 0);
+
+        document.getElementById('res-ventas').innerText = "$" + vTot;
+        document.getElementById('res-gastos').innerText = "$" + gCaja;
+        document.getElementById('res-klar').innerText = "$" + gKlar;
+        document.getElementById('res-util').innerText = "$" + (vTot - gCaja - gKlar);
+    }
+
+    function verReporteDia() {
+        const fecha = document.getElementById('rep-fecha').value;
+        const area = document.getElementById('reporte-area');
+        const vDia = db.ventas.filter(x => x.f === fecha);
+        const gDia = db.gastos.filter(x => x.f === fecha);
+        
+        area.innerHTML = `
+            <b>Ventas:</b> ${vDia.length} ($${vDia.reduce((a,b)=>a+b.m,0)})<br>
+            <b>Gastos:</b> ${gDia.length} ($${gDia.reduce((a,b)=>a+b.m,0)})<br>
+            <small>Consulta la base de datos para detalles específicos.</small>
+        `;
+    }
+
+    function save() { localStorage.setItem('hielitos_final_db', JSON.stringify(db)); updHome(); }
+    
+    document.getElementById('header-date').innerText = new Date().toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+    updHome();
+</script>
+</body>
+</html>

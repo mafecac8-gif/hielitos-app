@@ -29,6 +29,12 @@ const blank={stock:{Cubo:0,Cilindro:0},movements:[],sales:[],expenses:[],mainten
 const SUPABASE_URL='https://hdiugadrnvepalrxjljq.supabase.co';
 const SUPABASE_KEY='sb_publishable_aXOSFoHgUsmwPG-FaGvReQ_fhDFNrrR';
 const SUPABASE_TABLE='hielitos_data';
+const SUPABASE_URL='https://hdiugadrnvepalrxjljq.supabase.co';
+const SUPABASE_KEY='sb_publishable_aXOSFoHgUsmwPG-FaGvReQ_fhDFNrrR';
+const SUPABASE_TABLE='hielitos_data';
+
+const KEY='hielitos_ahh_db_v3';
+
 const SUPABASE_API=SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/'+SUPABASE_TABLE;
 let syncTimer=null, isSyncing=false, cloudRowId=null;
 function cloneBlank(){return JSON.parse(JSON.stringify(blank));}

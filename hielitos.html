@@ -81,7 +81,7 @@ async function syncNow(silent=false){
   try{
     const remote=await fetchRemoteDB();
     if(remote){ db=normalize(newer(db,remote)); }
-    db.__updatedAt=Date.now(); persistLocal(); recalcStock(); render();
+    persistLocal(); recalcStock(); render();
     await uploadRemoteDB();
     setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado con Supabase');
   }catch(e){console.error(e); setOnlineStatus('🟡 Local'); if(!silent) toast('⚠️ Guardado local; revisa permisos Supabase');}

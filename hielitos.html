@@ -868,9 +868,72 @@ go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),600
 /* Los datos NUNCA se borran del db. El slice(0,30) era solo de display.
    Lo ampliamos a 200 y dejamos el historial completo en la vista.    */
 
-/* ── PROBLEMA 2: Autocompletado / sugerencias de clientes ──────────── */
+/* ── PROBLEMA 2: Autocompletado + Homologación inteligente de clientes ─ */
 (function patchClientAutocomplete(){
-  /* Inyectar datalist para saleClient */
+
+  /* ── Motor de normalización inteligente ── */
+  window._normalizeClient=function(name){
+    let n=String(name||'').trim();
+    /* Quitar acentos */
+    n=n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+    /* Normalizar "Súper Sánchez" y variantes a "SS" */
+    n=n.replace(/^S\.S\.?\s*/,'SS ').replace(/^SUPER\s+SANCHEZ\s*/,'SS ').replace(/^SUPER\s*SANCHEZ\s*/,'SS ');
+    /* Quitar puntuación especial */
+    n=n.replace(/[#\.\-_,;:]+/g,' ');
+    /* Normalizar espacios */
+    n=n.replace(/\s+/g,' ').trim();
+    if(n.startsWith('SS')){
+      let rest=n.slice(2).trim();
+      /* Separar letras de números pegados: JALPA10 → JALPA 10 */
+      rest=rest.replace(/([A-Z])(\d)/g,'$1 $2').replace(/(\d)([A-Z])/g,'$1 $2');
+      let nums=(rest.match(/\b(\d+)\b/g)||[]).sort((a,b)=>+a-+b);
+      let words=(rest.match(/\b([A-Z]{2,})\b/g)||[]).sort();
+      let canonical='SS';
+      if(words.length) canonical+=' '+words.join(' ');
+      if(nums.length)  canonical+=' '+nums.join(' ');
+      return canonical.trim();
+    }
+    return n.toLowerCase().replace(/\s+/g,' ').trim();
+  };
+
+  /* ── Mapa fijo de homologación (basado en datos reales) ── */
+  const HOMOLOG_MAP={
+    "SS 10 JALPA": "SS10 JALPA",
+    "SS JALPA 10": "SS10 JALPA",
+    "SS10 JALPA": "SS10 JALPA",
+    "SS1": "SS1",
+    "SS2": "SS2",
+    "SS3": "SS3",
+    "SS4": "SS4",
+    "SS AYAPA": "SS AYAPA",
+    "CRIS ACOPA": "Cris Acopa",
+    "LOLY": "Loly",
+    "ROMÁN": "Román",
+    "SR. ANDRADE": "Sr. Andrade",
+    "EL ÑERO": "El Ñero",
+    "Sra Patsi": "Sra. Patsi",
+    "Beto gimnasio los mas perrones": "Beto gimnasio los más perrones"
+  };
+
+  /* ── Homologar todos los nombres en db.sales al nombre canónico ── */
+  window.homologateAllClients=function(silent){
+    let changed=0;
+    (db.sales||[]).forEach(s=>{
+      let n=String(s.client||'').trim();
+      if(!n) return;
+      /* 1. Mapa fijo exacto */
+      if(HOMOLOG_MAP[n] && HOMOLOG_MAP[n]!==n){s.client=HOMOLOG_MAP[n];changed++;return;}
+      /* 2. Normalización inteligente como fallback */
+      let k=_normalizeClient(n);
+      let canon=HOMOLOG_MAP[Object.keys(HOMOLOG_MAP).find(x=>_normalizeClient(x)===k)||'']||'';
+      if(canon&&canon!==n){s.client=canon;changed++;}
+    });
+    if(changed>0){recalcStock();persistLocal();render();}
+    if(!silent) toast(changed>0?`✅ ${changed} registros homologados`:'✅ Sin duplicados detectados');
+    return changed;
+  };
+
+  /* ── Datalist con nombres ya canónicos ── */
   if(!document.getElementById('clientDatalist')){
     let dl=document.createElement('datalist');
     dl.id='clientDatalist';
@@ -878,12 +941,7 @@ go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),600
     let inp=document.getElementById('saleClient');
     if(inp) inp.setAttribute('list','clientDatalist');
   }
-  /* Normalización de nombre para dedupe */
-  window._normalizeClient=function(name){
-    return String(name||'').trim()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .toLowerCase().replace(/\s+/g,' ').trim();
-  };
+
   window.refreshClientDatalist=function(){
     let dl=document.getElementById('clientDatalist');
     if(!dl)return;
@@ -896,12 +954,35 @@ go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),600
     opts.sort((a,b)=>a.localeCompare(b,'es'));
     dl.innerHTML=opts.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   };
-  /* Parchar save original para actualizar datalist después */
+
+  /* ── Al guardar: normalizar el nombre del cliente antes de guardarlo ── */
   let _origSave=window.save;
   window.save=function(){
     _origSave&&_origSave.call(this,...arguments);
     refreshClientDatalist();
   };
+
+  /* ── Normalizar el input al perder el foco (antes de guardar) ── */
+  setTimeout(function(){
+    let inp=document.getElementById('saleClient');
+    if(inp){
+      inp.addEventListener('blur',function(){
+        let raw=this.value.trim();
+        if(!raw)return;
+        /* 1. Mapa fijo exacto */
+        if(typeof HOMOLOG_MAP!=='undefined'&&HOMOLOG_MAP[raw]) {this.value=HOMOLOG_MAP[raw];return;}
+        /* 2. Buscar si ya existe un nombre canónico en las ventas */
+        let k=_normalizeClient(raw);
+        let existing='';
+        (db.sales||[]).some(s=>{
+          if(_normalizeClient(s.client)===k){existing=s.client;return true;}
+          return false;
+        });
+        if(existing&&existing!==raw) this.value=existing;
+      });
+    }
+  },500);
+
 })();
 
 /* ── PROBLEMA 3: Fechas y trazabilidad en clientes que deben ────────── */
@@ -1129,9 +1210,10 @@ window.renderStockReconciliation=function(){
 
 /* ── Inicialización final ─────────────────────────────────────────────── */
 (function finalInit(){
+  if(window.deduplicateSales) deduplicateSales();
+  if(window.homologateAllClients) homologateAllClients(true);
   if(window.refreshClientDatalist) refreshClientDatalist();
   if(window.renderStockReconciliation) setTimeout(renderStockReconciliation,300);
-  if(window.deduplicateSales) deduplicateSales();
 })();
 
 /* ═══════════════════ FIN DE FIXES ═══════════════════════════════════ */

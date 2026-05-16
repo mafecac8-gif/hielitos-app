@@ -1495,9 +1495,11 @@ window.syncFreqToCheckPeriod=function(){
 
     /* Regenerar filtros de frecuencia */
     if(window.freqFilters){
-      freqFilters.innerHTML=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'].map(f=>
-        `<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';showCheckPeriodFor('${f}');renderTasks()">${f}</button>`
-      ).join('');
+      freqFilters.innerHTML=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'].map(f=>{
+        let taskRespNow=document.getElementById('compResp')?.value||'Todos';
+        let count=TASKS.filter(t=>t.freq===f&&respMatches(t.resp,taskRespNow)).length;
+        return `<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';showCheckPeriodFor('${f}');renderTasks()">${f}${count>0?' ('+count+')':''}</button>`;
+      }).join('');
     }
 
     let periodKey=getCheckPeriodKey();
@@ -1505,7 +1507,11 @@ window.syncFreqToCheckPeriod=function(){
     /* Para otros períodos, usamos el periodKey como "fecha" en la clave       */
 
     if(!window.taskList) return;
-    taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{
+    /* Filtrar por frecuencia Y responsable */
+    let taskResp=document.getElementById('compResp')?.value||'Todos';
+    taskList.innerHTML=TASKS.map((t,i)=>[t,i])
+      .filter(([t])=>t.freq===currentFreq && respMatches(t.resp,taskResp))
+      .map(([t,i])=>{
       let c=db.checks[periodKey+'|'+i]||{};
       return `<div class="task ${c.done?'done':''}">
         <div class="tasktop">
@@ -1537,24 +1543,26 @@ window.setCheckPeriod=function(idx,done,comment,fileName){
   window.pctBy=function(freq,rubro){
     let resp=document.getElementById('compResp')?.value||'Todos';
     let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>t.freq===freq&&t.rubro===rubro&&respMatches(t.resp,resp));
+    if(!items.length) return null; /* null = sin tareas para este filtro */
     let periodKey=getCheckPeriodKey();
     let done=items.filter(({i})=>{
       let key=periodKey+'|'+i;
       return db.checks[key]&&db.checks[key].done;
     }).length;
-    return items.length?Math.round(done/items.length*100):0;
+    return Math.round(done/items.length*100);
   };
 
   window.overallCompliancePct=function(){
     let resp=document.getElementById('compResp')?.value||'Todos';
     let sel=document.getElementById('compMode')?.value||'all';
     let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>(sel==='all'||t.freq===sel)&&respMatches(t.resp,resp));
+    if(!items.length) return null; /* null = sin tareas para este filtro */
     let periodKey=getCheckPeriodKey();
     let done=items.filter(({i})=>{
       let key=periodKey+'|'+i;
       return db.checks[key]&&db.checks[key].done;
     }).length;
-    return items.length?Math.round(done/items.length*100):0;
+    return Math.round(done/items.length*100);
   };
 })();
 
@@ -1726,7 +1734,8 @@ window.getActivePeriodLabel=function(){
     if(sel!=='all') freqs=freqs.filter(f=>f===sel);
 
     let overall=overallCompliancePct();
-    let overallColor=overall>=90?'#009b72':overall>=75?'#ff9f1c':'#e63946';
+    let hasItems=overall!==null;
+    let overallColor=!hasItems?'#68788c':overall>=90?'#009b72':overall>=75?'#ff9f1c':'#e63946';
     let periodLabel=getActivePeriodLabel();
 
     let overallCard=`<div style="padding:14px;border:2px solid ${overallColor};border-radius:18px;background:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -1736,8 +1745,10 @@ window.getActivePeriodLabel=function(){
         <small style="color:var(--azul);font-weight:800">${periodLabel}</small>
       </div>
       <div style="text-align:center">
-        <div style="font-size:36px;font-weight:900;color:${overallColor}">${overall}%</div>
-        ${semaforoBadge(overall)}
+        ${hasItems
+          ? `<div style="font-size:36px;font-weight:900;color:${overallColor}">${overall}%</div>${semaforoBadge(overall)}`
+          : `<div style="font-size:18px;font-weight:900;color:#68788c">Sin tareas</div><span style="background:#e8f5ff;color:var(--azul);padding:3px 9px;border-radius:999px;font-size:12px;font-weight:900">ℹ️ No aplica</span>`
+        }
       </div>
     </div>`;
 
@@ -1745,7 +1756,9 @@ window.getActivePeriodLabel=function(){
       let rub=[...new Set(TASKS.filter(t=>t.freq===freq&&respMatches(t.resp,resp)).map(t=>t.rubro))];
       if(!rub.length) return '';
       let lines=rub.map(r=>{
-        let p=pctBy(freq,r),cls=p<75?'bad':p<90?'warn':'';
+        let p=pctBy(freq,r);
+        if(p===null) return ''; /* sin tareas para este filtro → no mostrar */
+        let cls=p<75?'bad':p<90?'warn':'';
         let bg=p>=90?'#e8fff7':p>=75?'#fff8e7':'#fff0f0';
         return `<div style="margin:8px 0 10px;padding:10px;background:${bg};border-radius:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1753,7 +1766,8 @@ window.getActivePeriodLabel=function(){
           </div>
           <div class="progress"><div class="bar ${cls}" style="width:${p}%"></div></div>
         </div>`;
-      }).join('');
+      }).filter(Boolean).join('');
+      if(!lines) return ''; /* si todos los rubros quedaron vacíos, omitir la frecuencia */
       return `<div style="padding:12px;border:1px solid var(--line);border-radius:18px;background:#fff;margin-bottom:12px">
         <h3 style="margin:0 0 8px;color:var(--azul);font-size:15px">📌 ${freq}</h3>${lines}
       </div>`;

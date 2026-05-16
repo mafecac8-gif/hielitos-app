@@ -1127,24 +1127,23 @@ go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),600
 window.renderDebtList=function(){
   let rows=db.sales.map((s,i)=>({s,i})).filter(x=>+x.s.debt>0)
     .sort((a,b)=>String(b.s.date||'').localeCompare(String(a.s.date||'')));
-  let lastPaidComment=function(s){
-    let c=String(s.comment||'');
-    return c||'Pendiente';
-  };
   if(!window.debtList) return;
   debtList.innerHTML=rows.length?rows.map(({s,i})=>{
     let saldo=money(+s.debt||0);
     let pagado=money(+s.paid||0);
     let original=money(+s.total||0);
     let fechaVenta=s.date||'—';
-    let pagoInfo=+s.paid>0
-      ?`Cobrado ${pagado} · Última nota: ${lastPaidComment(s)}`
-      :'Sin pago registrado — Pendiente';
+    /* Mostrar comentario/folio igual que en historial de ventas */
+    let comentario=String(s.comment||'').trim();
+    let pagoLine=+s.paid>0
+      ?`Cobrado ${pagado} · ${comentario||'Sin comentario'}`
+      :`Sin pago registrado — Pendiente${comentario?' · '+comentario:''}`;
+    let klarBadge=isSuperSanchezClient(s.client)?' · 🏦 Klar SS':'';
     return item(
       `⚠️ ${s.client}`,
-      `📅 Venta: ${fechaVenta} · Tipo: ${s.tipo||'Cubo'} · Bolsas: ${s.qty||0}`+
-      `<br>💰 Total original: ${original} · Cobrado: ${pagado} · <b>Saldo pendiente: ${saldo}</b>`+
-      `<br>📝 ${pagoInfo}`,
+      `📅 ${fechaVenta} · ${s.tipo||'Cubo'} · ${s.qty||0} bolsas · Total ${original}${klarBadge}`+
+      `<br>💰 Cobrado: ${pagado} · <b>Saldo pendiente: ${saldo}</b>`+
+      `<br>📝 ${pagoLine}`,
       s.debt>0?'Debe':'Pagado',
       `<button class="mini ok" onclick="markSalePaid(${i})">Marcar pago</button>`+
       `<button class="mini" onclick="addSaleComment(${i})">Comentario</button>`+

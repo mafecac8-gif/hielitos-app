@@ -11,47 +11,111 @@
 <section id="gastos" class="screen"><div class="card"><h2>💸 Gastos</h2><div class="body"><div class="field"><label>Fecha</label><input id="expDate" type="date"></div><div class="field"><label>Proveedor / Concepto</label><input id="expProv" placeholder="Proveedor o concepto"></div><div class="row"><div class="field"><label>Monto</label><input id="expAmount" type="number" value="0"></div><div class="field"><label>Facturado</label><select id="expInvoice"><option>Sí</option><option>No</option></select></div></div><div class="field"><label>Método</label><select id="expMethod"><option>Efectivo</option><option>Transferencia</option><option>Apartado Klar</option></select></div><button class="btn bad" onclick="saveExpense()">💸 Guardar gasto</button></div></div><br><div class="card"><h2>🧾 Historial gastos</h2><div class="body list" id="expenseList"></div></div></section>
 <section id="mant" class="screen"><div class="card"><h2>🔧 Mantenimiento</h2><div class="body"><div class="field"><label>Fecha mantenimiento</label><input id="mantDate" type="date"></div><div class="field"><label>Equipo</label><div class="seg"><div class="choice active" data-equipo="Máquina">🧊 Máquina</div><div class="choice" data-equipo="Planta">💧 Planta</div><div class="choice" data-equipo="Camioneta">🚚 Camioneta</div><div class="choice" data-equipo="Conservador">📦 Conservador</div></div></div><div class="field"><label>Equipo específico</label><select id="mantDetail"></select></div><div class="field"><label>Tipo</label><div class="seg" style="grid-template-columns:repeat(2,1fr)"><div class="choice active" data-mtipo="Preventivo">✅ Preventivo</div><div class="choice" data-mtipo="Correctivo">🔨 Correctivo</div><div class="choice" data-mtipo="Falla">🚨 Falla</div><div class="choice" data-mtipo="Retro-lavado">💧 Retro-lavado</div></div></div><div class="field"><label>Descripción</label><textarea id="mantDesc"></textarea></div><div class="row"><div class="field"><label>Costo</label><input id="mantCost" type="number" value="0"></div><div class="field"><label>Técnico</label><input id="mantTech" placeholder="Nombre"></div></div><button class="btn" onclick="saveMant()">🔧 Guardar</button></div></div><br><div class="card"><h2>📋 Historial mantenimiento</h2><div class="body"><div class="filters" id="mantFilters"></div><div class="list" id="mantList"></div></div></div></section>
 <section id="check" class="screen">
-<div class="card"><h2>📊 Cumplimiento por Rubro</h2><div class="body"><div class="rangebox"><div class="field"><label>Periodicidad</label><select id="compMode" onchange="toggleCompControls();syncFreqToCheckPeriod();renderCompliance();renderOperationalKPIs()"><option value="all">Todas</option><option value="Diaria">Diario</option><option value="Semanal">Semanal</option><option value="Mensual">Mensual</option><option value="Trimestral">Trimestral</option><option value="Semestral">Semestral</option><option value="Anual">Anual</option></select></div><div class="field"><label>Responsable</label><select id="compResp" onchange="renderCompliance();renderOperationalKPIs()"><option value="Todos">Todos</option><option value="Roberto">Roberto</option><option value="Jeydi">Jeydi</option><option value="Maria">Maria</option><option value="Todos equipo">Todos / equipo</option></select></div></div><div class="list" id="compliance"></div></div></div>
-<br>
-<div class="card"><h2>✅ Checklist Semáforo</h2><div class="body">
-<div id="checkPeriodSelector">
-  <div class="field" id="boxCheckDate">
-    <label>📅 Día (Diaria)</label>
-    <input id="checkDate" type="date">
-  </div>
-  <div class="field" id="boxCheckWeek" style="display:none">
-    <label>📅 Semana (Semanal)</label>
-    <input id="checkWeek" type="week">
-    <small style="color:var(--muted);margin-top:4px;display:block" id="checkWeekLabel"></small>
-  </div>
-  <div class="field" id="boxCheckMonth" style="display:none">
-    <label>📅 Mes (Mensual)</label>
-    <input id="checkMonth" type="month">
-  </div>
-  <div class="field" id="boxCheckQuarter" style="display:none">
-    <label>📅 Trimestre (Trimestral)</label>
-    <select id="checkQuarter">
-      <option value="Q1">Q1 — Enero · Febrero · Marzo</option>
-      <option value="Q2">Q2 — Abril · Mayo · Junio</option>
-      <option value="Q3">Q3 — Julio · Agosto · Septiembre</option>
-      <option value="Q4">Q4 — Octubre · Noviembre · Diciembre</option>
-    </select>
-    <select id="checkQuarterYear" style="margin-top:8px"></select>
-  </div>
-  <div class="field" id="boxCheckSemester" style="display:none">
-    <label>📅 Semestre (Semestral)</label>
-    <select id="checkSemester">
-      <option value="S1">S1 — Enero · Febrero · Marzo · Abril · Mayo · Junio</option>
-      <option value="S2">S2 — Julio · Agosto · Septiembre · Octubre · Noviembre · Diciembre</option>
-    </select>
-    <select id="checkSemesterYear" style="margin-top:8px"></select>
-  </div>
-  <div class="field" id="boxCheckYear" style="display:none">
-    <label>📅 Año (Anual)</label>
-    <select id="checkYear"></select>
+
+<!-- ═══ CARD ÚNICA DE CONTROL ═══ -->
+<div class="card">
+  <h2>📊 Cumplimiento por Rubro</h2>
+  <div class="body">
+
+    <!-- Fila 1: Periodicidad + Responsable -->
+    <div class="rangebox">
+      <div class="field">
+        <label>Periodicidad</label>
+        <select id="compMode" onchange="onCompModeChange()">
+          <option value="all">Todas</option>
+          <option value="Diaria">Diario</option>
+          <option value="Semanal">Semanal</option>
+          <option value="Mensual">Mensual</option>
+          <option value="Trimestral">Trimestral</option>
+          <option value="Semestral">Semestral</option>
+          <option value="Anual">Anual</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Responsable</label>
+        <select id="compResp" onchange="renderCompliance();renderOperationalKPIs()">
+          <option value="Todos">Todos</option>
+          <option value="Roberto">Roberto</option>
+          <option value="Jeydi">Jeydi</option>
+          <option value="Maria">Maria</option>
+          <option value="Todos equipo">Todos / equipo</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Fila 2: Selector de período (cambia según periodicidad) -->
+    <div id="checkPeriodSelector" style="margin-top:4px">
+
+      <div class="field" id="boxCheckDate">
+        <label>📅 Selecciona el día</label>
+        <input id="checkDate" type="date" onchange="onPeriodChange()">
+      </div>
+
+      <div class="field" id="boxCheckWeek" style="display:none">
+        <label>📅 Selecciona la semana</label>
+        <input id="checkWeek" type="week" onchange="onPeriodChange()">
+        <small style="color:var(--azul);font-weight:800;margin-top:6px;display:block" id="checkWeekLabel"></small>
+      </div>
+
+      <div class="field" id="boxCheckMonth" style="display:none">
+        <label>📅 Selecciona el mes</label>
+        <input id="checkMonth" type="month" onchange="onPeriodChange()">
+      </div>
+
+      <div class="field" id="boxCheckQuarter" style="display:none">
+        <label>📅 Selecciona el trimestre</label>
+        <div class="row">
+          <select id="checkQuarter" onchange="onPeriodChange()">
+            <option value="Q1">Q1 — Ene · Feb · Mar</option>
+            <option value="Q2">Q2 — Abr · May · Jun</option>
+            <option value="Q3">Q3 — Jul · Ago · Sep</option>
+            <option value="Q4">Q4 — Oct · Nov · Dic</option>
+          </select>
+          <select id="checkQuarterYear" onchange="onPeriodChange()"></select>
+        </div>
+      </div>
+
+      <div class="field" id="boxCheckSemester" style="display:none">
+        <label>📅 Selecciona el semestre</label>
+        <div class="row">
+          <select id="checkSemester" onchange="onPeriodChange()">
+            <option value="S1">S1 — Ene a Jun</option>
+            <option value="S2">S2 — Jul a Dic</option>
+          </select>
+          <select id="checkSemesterYear" onchange="onPeriodChange()"></select>
+        </div>
+      </div>
+
+      <div class="field" id="boxCheckYear" style="display:none">
+        <label>📅 Selecciona el año</label>
+        <select id="checkYear" onchange="onPeriodChange()"></select>
+      </div>
+
+    </div><!-- /checkPeriodSelector -->
+
+    <!-- Resultados de cumplimiento -->
+    <div class="list" id="compliance" style="margin-top:8px"></div>
+
   </div>
 </div>
-<div class="filters" id="freqFilters"></div><div class="list" id="taskList"></div></div></div></section>
+
+<br>
+
+<!-- ═══ CHECKLIST SEMÁFORO (sin controles duplicados) ═══ -->
+<div class="card">
+  <h2>✅ Checklist Semáforo</h2>
+  <div class="body">
+    <!-- Pill que muestra el período activo -->
+    <div id="activePeriodPill" style="margin-bottom:12px;padding:10px 14px;background:var(--azul);color:#fff;border-radius:14px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px">
+      <span id="activePeriodText">📅 Cargando período...</span>
+    </div>
+    <!-- Filtros de frecuencia (Diaria / Semanal / etc.) -->
+    <div class="filters" id="freqFilters"></div>
+    <div class="list" id="taskList"></div>
+  </div>
+</div>
+
+</section>
 
 <section id="clientes" class="screen"><div class="card"><h2>👥 Historial de clientes</h2><div class="body"><div class="field"><label>Buscar cliente</label><input id="clientSearch" placeholder="Buscar por nombre..." oninput="renderClients()"></div><div class="body grid kpis" style="padding:0 0 12px 0"><div class="kpi">👥 <span>Clientes únicos</span><b id="clTotal">0</b></div><div class="kpi">🧊 <span>Bolsas históricas</span><b id="clBags">0</b></div><div class="kpi">✅ <span>Pagado histórico</span><b id="clPaid">$0</b></div><div class="kpi">⚠️ <span>Debe histórico</span><b id="clDebt">$0</b></div></div><div class="list" id="clientList"></div></div></div></section>
 <section id="datos" class="screen"><div class="card"><h2>🗂 Datos</h2><div class="body grid"><button class="btn alt" onclick="backupJSON()">💾 Descargar respaldo JSON</button><button class="btn ok" onclick="syncNow()">↻ Sincronizar ahora</button></div></div><br><div class="card"><h2>📤 Exportación avanzada para Excel</h2><div class="body grid"><div class="field"><label>Periodo a descargar</label><select id="advExportMode" onchange="toggleAdvExportControls()"><option value="all">Todo el histórico</option><option value="day">Día específico</option><option value="range">Rango de fechas</option><option value="month">Mes</option><option value="year">Año</option></select></div><div class="rangebox"><div class="field adv-exp adv-day" style="display:none"><label>Día</label><input type="date" id="advExportDate"></div><div class="field adv-exp adv-start" style="display:none"><label>Desde</label><input type="date" id="advExportStart"></div><div class="field adv-exp adv-end" style="display:none"><label>Hasta</label><input type="date" id="advExportEnd"></div><div class="field adv-exp adv-month" style="display:none"><label>Mes</label><input type="month" id="advExportMonth"></div><div class="field adv-exp adv-year" style="display:none"><label>Año</label><input type="number" id="advExportYear" min="2024" max="2100"></div></div><button class="btn ok" onclick="downloadAdvancedExcel()">📘 Descargar Excel Master</button><button class="btn" onclick="downloadAdvancedCSV('todo')">📊 Descargar TODO en CSV</button><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><button class="btn alt" onclick="downloadAdvancedCSV('ventas')">🚚 Ventas</button><button class="btn alt" onclick="downloadAdvancedCSV('gastos')">💸 Gastos</button><button class="btn alt" onclick="downloadAdvancedCSV('stock')">🧊 Stock</button><button class="btn alt" onclick="downloadAdvancedCSV('mantenimiento')">🔧 Mant.</button><button class="btn alt" onclick="downloadAdvancedCSV('checklist')">✅ Checklist</button><button class="btn alt" onclick="downloadAdvancedCSV('deudas')">⚠️ Deudas</button></div><small style="color:var(--muted)">El archivo Excel incluye Dashboard CEO, Estado de Resultados, Klar, ventas, gastos, stock, mantenimiento, checklist y deudas por pestañas según el periodo seleccionado.</small></div></div><br><div class="card"><h2>📚 Base de datos local</h2><div class="body list" id="allData"></div></div></section>
@@ -1567,6 +1631,171 @@ window.setCheckPeriod=function(idx,done,comment,fileName){
   };
 })();
 
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   CHECKLIST — CONTROLADOR UNIFICADO
+   Un solo lugar de control: periodicidad + período + todo se sync
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Llamado cuando cambia la periodicidad (compMode) ──────────── */
+window.onCompModeChange=function(){
+  let sel=document.getElementById('compMode')?.value||'all';
+  // Sincronizar currentFreq con la selección
+  let map={'Diaria':'Diaria','Semanal':'Semanal','Mensual':'Mensual',
+           'Trimestral':'Trimestral','Semestral':'Semestral','Anual':'Anual'};
+  if(map[sel]) currentFreq=map[sel];
+  else currentFreq='Diaria'; // "all" → default Diaria para el checklist
+
+  populateYearSelects();
+  showCheckPeriodFor(currentFreq);
+  updateActivePeriodPill();
+  renderTasks();
+  renderCompliance();
+  renderOperationalKPIs();
+};
+
+/* ── Llamado cuando cambia el período (fecha/semana/mes/etc.) ─── */
+window.onPeriodChange=function(){
+  // Actualizar label de semana si aplica
+  let wv=document.getElementById('checkWeek')?.value;
+  let wl=document.getElementById('checkWeekLabel');
+  if(wl&&wv) wl.textContent=weekRangeLabel(wv);
+
+  updateActivePeriodPill();
+  renderTasks();
+  renderCompliance();
+  renderOperationalKPIs();
+};
+
+/* ── Pill que muestra el período activo ─────────────────────────── */
+window.updateActivePeriodPill=function(){
+  let pill=document.getElementById('activePeriodPill');
+  let txt=document.getElementById('activePeriodText');
+  if(!pill||!txt) return;
+  let label=getActivePeriodLabel();
+  txt.textContent=label||'📅 Período seleccionado';
+};
+
+/* ── Label descriptivo del período activo ───────────────────────── */
+window.getActivePeriodLabel=function(){
+  let freq=currentFreq||'Diaria';
+  if(freq==='Diaria'){
+    let d=document.getElementById('checkDate')?.value||today();
+    try{return '📅 '+new Date(d+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+    catch(e){return '📅 '+d;}
+  }
+  if(freq==='Semanal'){
+    let w=document.getElementById('checkWeek')?.value||isoWeek(today());
+    let wn=w.split('-W')[1]||'';
+    return '📅 Semana '+wn+' · '+weekRangeLabel(w);
+  }
+  if(freq==='Mensual'){
+    let m=document.getElementById('checkMonth')?.value||today().slice(0,7);
+    let [y,mo]=m.split('-');
+    try{return '📅 '+new Date(+y,+mo-1,1).toLocaleDateString('es-MX',{month:'long',year:'numeric'});}
+    catch(e){return '📅 '+m;}
+  }
+  if(freq==='Trimestral'){
+    let q=document.getElementById('checkQuarter')?.value||'Q2';
+    let y=document.getElementById('checkQuarterYear')?.value||new Date().getFullYear();
+    let labels={'Q1':'Ene–Mar','Q2':'Abr–Jun','Q3':'Jul–Sep','Q4':'Oct–Dic'};
+    return `📅 ${q} ${y} · ${labels[q]||''}`;
+  }
+  if(freq==='Semestral'){
+    let s=document.getElementById('checkSemester')?.value||'S1';
+    let y=document.getElementById('checkSemesterYear')?.value||new Date().getFullYear();
+    let labels={'S1':'Ene–Jun','S2':'Jul–Dic'};
+    return `📅 ${s} ${y} · ${labels[s]||''}`;
+  }
+  if(freq==='Anual'){
+    let y=document.getElementById('checkYear')?.value||new Date().getFullYear();
+    return `📅 Año ${y}`;
+  }
+  return '📅 Período seleccionado';
+};
+
+/* ── Override renderCompliance para mostrar el período activo ───── */
+(function patchRenderComplianceLabel(){
+  let _orig=window.renderCompliance;
+  window.renderCompliance=function(){
+    if(!document.getElementById('compliance')) return;
+    // Reconstruir con el label correcto del período
+    let sel=document.getElementById('compMode')?.value||'all';
+    let resp=document.getElementById('compResp')?.value||'Todos';
+    let freqs=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'];
+    if(sel!=='all') freqs=freqs.filter(f=>f===sel);
+
+    let overall=overallCompliancePct();
+    let overallColor=overall>=90?'#009b72':overall>=75?'#ff9f1c':'#e63946';
+    let periodLabel=getActivePeriodLabel();
+
+    let overallCard=`<div style="padding:14px;border:2px solid ${overallColor};border-radius:18px;background:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <b style="font-size:15px;color:var(--azul)">📊 Cumplimiento General Total</b><br>
+        <small style="color:var(--muted)">${sel==='all'?'Todas las frecuencias':sel} · Responsable: ${resp}</small><br>
+        <small style="color:var(--azul);font-weight:800">${periodLabel}</small>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:36px;font-weight:900;color:${overallColor}">${overall}%</div>
+        ${semaforoBadge(overall)}
+      </div>
+    </div>`;
+
+    let freqCards=freqs.map(freq=>{
+      let rub=[...new Set(TASKS.filter(t=>t.freq===freq&&respMatches(t.resp,resp)).map(t=>t.rubro))];
+      if(!rub.length) return '';
+      let lines=rub.map(r=>{
+        let p=pctBy(freq,r),cls=p<75?'bad':p<90?'warn':'';
+        let bg=p>=90?'#e8fff7':p>=75?'#fff8e7':'#fff0f0';
+        return `<div style="margin:8px 0 10px;padding:10px;background:${bg};border-radius:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <b style="font-size:13px">${r}</b>${semaforoBadge(p)}
+          </div>
+          <div class="progress"><div class="bar ${cls}" style="width:${p}%"></div></div>
+        </div>`;
+      }).join('');
+      return `<div style="padding:12px;border:1px solid var(--line);border-radius:18px;background:#fff;margin-bottom:12px">
+        <h3 style="margin:0 0 8px;color:var(--azul);font-size:15px">📌 ${freq}</h3>${lines}
+      </div>`;
+    }).join('');
+
+    compliance.innerHTML=overallCard+(freqCards||'<div style="padding:14px;color:var(--muted)">Sin tareas para este filtro</div>');
+    updateActivePeriodPill();
+  };
+})();
+
+/* ── Inicialización del controlador unificado ───────────────────── */
+(function initUnifiedController(){
+  setTimeout(function(){
+    // Valores iniciales
+    let cd=document.getElementById('checkDate'); if(cd&&!cd.value) cd.value=today();
+    let cw=document.getElementById('checkWeek'); if(cw&&!cw.value) cw.value=isoWeek(today());
+    let cm=document.getElementById('checkMonth'); if(cm&&!cm.value) cm.value=today().slice(0,7);
+
+    // Determinar Q actual
+    let nowMonth=new Date().getMonth()+1;
+    let cq=document.getElementById('checkQuarter');
+    if(cq&&!cq.value){
+      cq.value=nowMonth<=3?'Q1':nowMonth<=6?'Q2':nowMonth<=9?'Q3':'Q4';
+    }
+    // Semestre actual
+    let cs=document.getElementById('checkSemester');
+    if(cs&&!cs.value) cs.value=nowMonth<=6?'S1':'S2';
+
+    populateYearSelects();
+    showCheckPeriodFor(currentFreq||'Diaria');
+
+    // Label semana inicial
+    let wv=document.getElementById('checkWeek')?.value;
+    let wl=document.getElementById('checkWeekLabel');
+    if(wl&&wv) wl.textContent=weekRangeLabel(wv);
+
+    updateActivePeriodPill();
+    renderCompliance();
+    renderTasks();
+  },700);
+})();
 /* ═══════════════════════════════════════════════════════════════ */
 /* ═══════════════════ FIN DE FIXES ═══════════════════════════════════ */
 </script></body></html>

@@ -11,9 +11,47 @@
 <section id="gastos" class="screen"><div class="card"><h2>💸 Gastos</h2><div class="body"><div class="field"><label>Fecha</label><input id="expDate" type="date"></div><div class="field"><label>Proveedor / Concepto</label><input id="expProv" placeholder="Proveedor o concepto"></div><div class="row"><div class="field"><label>Monto</label><input id="expAmount" type="number" value="0"></div><div class="field"><label>Facturado</label><select id="expInvoice"><option>Sí</option><option>No</option></select></div></div><div class="field"><label>Método</label><select id="expMethod"><option>Efectivo</option><option>Transferencia</option><option>Apartado Klar</option></select></div><button class="btn bad" onclick="saveExpense()">💸 Guardar gasto</button></div></div><br><div class="card"><h2>🧾 Historial gastos</h2><div class="body list" id="expenseList"></div></div></section>
 <section id="mant" class="screen"><div class="card"><h2>🔧 Mantenimiento</h2><div class="body"><div class="field"><label>Fecha mantenimiento</label><input id="mantDate" type="date"></div><div class="field"><label>Equipo</label><div class="seg"><div class="choice active" data-equipo="Máquina">🧊 Máquina</div><div class="choice" data-equipo="Planta">💧 Planta</div><div class="choice" data-equipo="Camioneta">🚚 Camioneta</div><div class="choice" data-equipo="Conservador">📦 Conservador</div></div></div><div class="field"><label>Equipo específico</label><select id="mantDetail"></select></div><div class="field"><label>Tipo</label><div class="seg" style="grid-template-columns:repeat(2,1fr)"><div class="choice active" data-mtipo="Preventivo">✅ Preventivo</div><div class="choice" data-mtipo="Correctivo">🔨 Correctivo</div><div class="choice" data-mtipo="Falla">🚨 Falla</div><div class="choice" data-mtipo="Retro-lavado">💧 Retro-lavado</div></div></div><div class="field"><label>Descripción</label><textarea id="mantDesc"></textarea></div><div class="row"><div class="field"><label>Costo</label><input id="mantCost" type="number" value="0"></div><div class="field"><label>Técnico</label><input id="mantTech" placeholder="Nombre"></div></div><button class="btn" onclick="saveMant()">🔧 Guardar</button></div></div><br><div class="card"><h2>📋 Historial mantenimiento</h2><div class="body"><div class="filters" id="mantFilters"></div><div class="list" id="mantList"></div></div></div></section>
 <section id="check" class="screen">
-<div class="card"><h2>📊 Cumplimiento por Rubro</h2><div class="body"><div class="rangebox"><div class="field"><label>Periodicidad</label><select id="compMode" onchange="toggleCompControls();renderCompliance();renderOperationalKPIs()"><option value="all">Todas</option><option value="Diaria">Diario</option><option value="Semanal">Semanal</option><option value="Mensual">Mensual</option><option value="Trimestral">Trimestral</option><option value="Semestral">Semestral</option><option value="Anual">Anual</option></select></div><div class="field"><label>Responsable</label><select id="compResp" onchange="renderCompliance();renderOperationalKPIs()"><option value="Todos">Todos</option><option value="Roberto">Roberto</option><option value="Jeydi">Jeydi</option><option value="Maria">Maria</option><option value="Todos equipo">Todos / equipo</option></select></div></div><div class="list" id="compliance"></div></div></div>
+<div class="card"><h2>📊 Cumplimiento por Rubro</h2><div class="body"><div class="rangebox"><div class="field"><label>Periodicidad</label><select id="compMode" onchange="toggleCompControls();syncFreqToCheckPeriod();renderCompliance();renderOperationalKPIs()"><option value="all">Todas</option><option value="Diaria">Diario</option><option value="Semanal">Semanal</option><option value="Mensual">Mensual</option><option value="Trimestral">Trimestral</option><option value="Semestral">Semestral</option><option value="Anual">Anual</option></select></div><div class="field"><label>Responsable</label><select id="compResp" onchange="renderCompliance();renderOperationalKPIs()"><option value="Todos">Todos</option><option value="Roberto">Roberto</option><option value="Jeydi">Jeydi</option><option value="Maria">Maria</option><option value="Todos equipo">Todos / equipo</option></select></div></div><div class="list" id="compliance"></div></div></div>
 <br>
-<div class="card"><h2>✅ Checklist Semáforo</h2><div class="body"><div class="field"><label>Fecha de cumplimiento</label><input id="checkDate" type="date"></div><div class="filters" id="freqFilters"></div><div class="list" id="taskList"></div></div></div></section>
+<div class="card"><h2>✅ Checklist Semáforo</h2><div class="body">
+<div id="checkPeriodSelector">
+  <div class="field" id="boxCheckDate">
+    <label>📅 Día (Diaria)</label>
+    <input id="checkDate" type="date">
+  </div>
+  <div class="field" id="boxCheckWeek" style="display:none">
+    <label>📅 Semana (Semanal)</label>
+    <input id="checkWeek" type="week">
+    <small style="color:var(--muted);margin-top:4px;display:block" id="checkWeekLabel"></small>
+  </div>
+  <div class="field" id="boxCheckMonth" style="display:none">
+    <label>📅 Mes (Mensual)</label>
+    <input id="checkMonth" type="month">
+  </div>
+  <div class="field" id="boxCheckQuarter" style="display:none">
+    <label>📅 Trimestre (Trimestral)</label>
+    <select id="checkQuarter">
+      <option value="Q1">Q1 — Enero · Febrero · Marzo</option>
+      <option value="Q2">Q2 — Abril · Mayo · Junio</option>
+      <option value="Q3">Q3 — Julio · Agosto · Septiembre</option>
+      <option value="Q4">Q4 — Octubre · Noviembre · Diciembre</option>
+    </select>
+    <select id="checkQuarterYear" style="margin-top:8px"></select>
+  </div>
+  <div class="field" id="boxCheckSemester" style="display:none">
+    <label>📅 Semestre (Semestral)</label>
+    <select id="checkSemester">
+      <option value="S1">S1 — Enero · Febrero · Marzo · Abril · Mayo · Junio</option>
+      <option value="S2">S2 — Julio · Agosto · Septiembre · Octubre · Noviembre · Diciembre</option>
+    </select>
+    <select id="checkSemesterYear" style="margin-top:8px"></select>
+  </div>
+  <div class="field" id="boxCheckYear" style="display:none">
+    <label>📅 Año (Anual)</label>
+    <select id="checkYear"></select>
+  </div>
+</div>
+<div class="filters" id="freqFilters"></div><div class="list" id="taskList"></div></div></div></section>
 
 <section id="clientes" class="screen"><div class="card"><h2>👥 Historial de clientes</h2><div class="body"><div class="field"><label>Buscar cliente</label><input id="clientSearch" placeholder="Buscar por nombre..." oninput="renderClients()"></div><div class="body grid kpis" style="padding:0 0 12px 0"><div class="kpi">👥 <span>Clientes únicos</span><b id="clTotal">0</b></div><div class="kpi">🧊 <span>Bolsas históricas</span><b id="clBags">0</b></div><div class="kpi">✅ <span>Pagado histórico</span><b id="clPaid">$0</b></div><div class="kpi">⚠️ <span>Debe histórico</span><b id="clDebt">$0</b></div></div><div class="list" id="clientList"></div></div></div></section>
 <section id="datos" class="screen"><div class="card"><h2>🗂 Datos</h2><div class="body grid"><button class="btn alt" onclick="backupJSON()">💾 Descargar respaldo JSON</button><button class="btn ok" onclick="syncNow()">↻ Sincronizar ahora</button></div></div><br><div class="card"><h2>📤 Exportación avanzada para Excel</h2><div class="body grid"><div class="field"><label>Periodo a descargar</label><select id="advExportMode" onchange="toggleAdvExportControls()"><option value="all">Todo el histórico</option><option value="day">Día específico</option><option value="range">Rango de fechas</option><option value="month">Mes</option><option value="year">Año</option></select></div><div class="rangebox"><div class="field adv-exp adv-day" style="display:none"><label>Día</label><input type="date" id="advExportDate"></div><div class="field adv-exp adv-start" style="display:none"><label>Desde</label><input type="date" id="advExportStart"></div><div class="field adv-exp adv-end" style="display:none"><label>Hasta</label><input type="date" id="advExportEnd"></div><div class="field adv-exp adv-month" style="display:none"><label>Mes</label><input type="month" id="advExportMonth"></div><div class="field adv-exp adv-year" style="display:none"><label>Año</label><input type="number" id="advExportYear" min="2024" max="2100"></div></div><button class="btn ok" onclick="downloadAdvancedExcel()">📘 Descargar Excel Master</button><button class="btn" onclick="downloadAdvancedCSV('todo')">📊 Descargar TODO en CSV</button><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><button class="btn alt" onclick="downloadAdvancedCSV('ventas')">🚚 Ventas</button><button class="btn alt" onclick="downloadAdvancedCSV('gastos')">💸 Gastos</button><button class="btn alt" onclick="downloadAdvancedCSV('stock')">🧊 Stock</button><button class="btn alt" onclick="downloadAdvancedCSV('mantenimiento')">🔧 Mant.</button><button class="btn alt" onclick="downloadAdvancedCSV('checklist')">✅ Checklist</button><button class="btn alt" onclick="downloadAdvancedCSV('deudas')">⚠️ Deudas</button></div><small style="color:var(--muted)">El archivo Excel incluye Dashboard CEO, Estado de Resultados, Klar, ventas, gastos, stock, mantenimiento, checklist y deudas por pestañas según el periodo seleccionado.</small></div></div><br><div class="card"><h2>📚 Base de datos local</h2><div class="body list" id="allData"></div></div></section>
@@ -141,10 +179,38 @@ let currentFreq='Diaria';
 function setCheck(idx,done,comment,fileName){let date=checkDate.value||today();let key=k(date,idx);db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,date,idx});save();}
 function renderTasks(){freqFilters.innerHTML=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'].map(f=>`<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';renderTasks()">${f}</button>`).join('');let date=checkDate.value||today();taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{let c=db.checks[k(date,i)]||{};return `<div class="task ${c.done?'done':''}"><div class="tasktop"><input type="checkbox" ${c.done?'checked':''} onchange="setCheck(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')"><div><div class="act">${t.icon} ${t.actividad}</div><div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div></div></div><textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheck(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea><label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheck(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this.files[0]?.name||'')"></label>${c.fileName?`<span class="badge">📎 ${c.fileName}</span>`:''}</div>`}).join('')}
 function toggleCompControls(){/* Periodicidad fija: Diario/Semanal/Mensual/Trimestral/Semestral/Anual */}
-function compDateInPeriod(date){return true}
+function compDateInPeriod(date){
+  /* Filtra checks por la fecha seleccionada en el checklist */
+  let d=String(date||'').slice(0,10);
+  let sel=document.getElementById('compMode')?.value||'all';
+  let checkD=document.getElementById('checkDate')?.value||today();
+  if(sel==='all'||!d) return d===checkD;
+  return d===checkD;
+}
 function respMatches(resp,filter){if(!filter||filter==='Todos')return true;let r=String(resp||'').toLowerCase();if(filter==='Todos equipo')return /todos/.test(r);return r.includes(String(filter).toLowerCase())}
-function pctBy(freq,rubro){let resp=document.getElementById('compResp')?.value||'Todos';let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>t.freq===freq&&t.rubro===rubro&&respMatches(t.resp,resp));let done=items.filter(({i})=>Object.values(db.checks||{}).some(c=>c.idx===i&&c.done)).length;return items.length?Math.round(done/items.length*100):0}
-function overallCompliancePct(){let resp=document.getElementById('compResp')?.value||'Todos',sel=document.getElementById('compMode')?.value||'all';let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>(sel==='all'||t.freq===sel)&&respMatches(t.resp,resp));let done=items.filter(({i})=>Object.values(db.checks||{}).some(c=>c.idx===i&&c.done)).length;return items.length?Math.round(done/items.length*100):0}
+function pctBy(freq,rubro){
+  let resp=document.getElementById('compResp')?.value||'Todos';
+  let checkD=document.getElementById('checkDate')?.value||today();
+  let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>t.freq===freq&&t.rubro===rubro&&respMatches(t.resp,resp));
+  /* Solo contar checks del día/fecha seleccionada */
+  let done=items.filter(({i})=>{
+    let key=checkD+'|'+i;
+    return db.checks[key]&&db.checks[key].done;
+  }).length;
+  return items.length?Math.round(done/items.length*100):0;
+}
+function overallCompliancePct(){
+  let resp=document.getElementById('compResp')?.value||'Todos';
+  let sel=document.getElementById('compMode')?.value||'all';
+  let checkD=document.getElementById('checkDate')?.value||today();
+  let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>(sel==='all'||t.freq===sel)&&respMatches(t.resp,resp));
+  /* Solo contar checks del día/fecha seleccionada */
+  let done=items.filter(({i})=>{
+    let key=checkD+'|'+i;
+    return db.checks[key]&&db.checks[key].done;
+  }).length;
+  return items.length?Math.round(done/items.length*100):0;
+}
 function semaforoBadge(p){let color=p>=90?'#009b72':p>=75?'#ff9f1c':'#e63946';let label=p>=90?'🟢 VERDE':p>=75?'🟡 AMARILLO':'🔴 ROJO';return `<span style="background:${color};color:#fff;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:900">${p}% ${label}</span>`}
 function renderCompliance(){
   let freqs=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'];
@@ -153,7 +219,9 @@ function renderCompliance(){
   let resp=document.getElementById('compResp')?.value||'Todos';
   let overall=overallCompliancePct();
   let overallColor=overall>=90?'#009b72':overall>=75?'#ff9f1c':'#e63946';
-  let overallCard=`<div style="padding:14px;border:2px solid ${overallColor};border-radius:18px;background:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><b style="font-size:15px;color:var(--azul)">📊 Cumplimiento General Total</b><br><small style="color:var(--muted)">${sel==='all'?'Todas las frecuencias':sel} · Responsable: ${resp}</small></div><div style="text-align:center"><div style="font-size:36px;font-weight:900;color:${overallColor}">${overall}%</div>${semaforoBadge(overall)}</div></div>`;
+  let checkD=document.getElementById('checkDate')?.value||today();
+  let checkDLabel=new Date(checkD+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  let overallCard=`<div style="padding:14px;border:2px solid ${overallColor};border-radius:18px;background:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><b style="font-size:15px;color:var(--azul)">📊 Cumplimiento General Total</b><br><small style="color:var(--muted)">${sel==='all'?'Todas las frecuencias':sel} · Responsable: ${resp}</small><br><small style="color:var(--azul);font-weight:800">📅 Fecha evaluada: ${checkDLabel}</small></div><div style="text-align:center"><div style="font-size:36px;font-weight:900;color:${overallColor}">${overall}%</div>${semaforoBadge(overall)}</div></div>`;
   let freqCards=freqs.map(freq=>{
     let rub=[...new Set(TASKS.filter(t=>t.freq===freq&&respMatches(t.resp,resp)).map(t=>t.rubro))];
     if(!rub.length) return '';
@@ -860,7 +928,11 @@ function downloadAdvancedExcel(){
 }
 
 
-[reportDate,reportStart,reportEnd,reportMonth,reportYear].forEach(e=>e?.addEventListener('change',render));checkDate?.addEventListener('change',renderTasks);if(window.compDate&&!compDate.value){compDate.value=today();compMonth.value=today().slice(0,7);compYear.value=new Date().getFullYear();toggleCompControls();}salePaid?.addEventListener('input',calcSale);if(document.getElementById('advExportDate')&&!document.getElementById('advExportDate').value){advExportDate.value=today();advExportStart.value=today();advExportEnd.value=today();advExportMonth.value=today().slice(0,7);advExportYear.value=new Date().getFullYear();toggleAdvExportControls();} if(window.mantDetail)updateMantDetail();
+[reportDate,reportStart,reportEnd,reportMonth,reportYear].forEach(e=>e?.addEventListener('change',render));checkDate?.addEventListener('change',function(){
+  renderTasks();
+  if(document.getElementById('compliance')) renderCompliance();
+  renderOperationalKPIs();
+});if(window.compDate&&!compDate.value){compDate.value=today();compMonth.value=today().slice(0,7);compYear.value=new Date().getFullYear();toggleCompControls();}salePaid?.addEventListener('input',calcSale);if(document.getElementById('advExportDate')&&!document.getElementById('advExportDate').value){advExportDate.value=today();advExportStart.value=today();advExportEnd.value=today();advExportMonth.value=today().slice(0,7);advExportYear.value=new Date().getFullYear();toggleAdvExportControls();} if(window.mantDetail)updateMantDetail();
 go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),60000);
 /* ═══════════════════ FIXES HIELITOS AHH!! ═══════════════════ */
 
@@ -1216,5 +1288,285 @@ window.renderStockReconciliation=function(){
   if(window.renderStockReconciliation) setTimeout(renderStockReconciliation,300);
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   CHECKLIST — SELECTOR DE PERÍODO INTELIGENTE
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Obtener el "período clave" según la frecuencia activa ─────────
+   Para diaria   → "2026-05-16"
+   Para semanal  → "2026-W20"
+   Para mensual  → "2026-05"
+   Para trimestral → "2026-Q2"
+   Para semestral  → "2026-S1"
+   Para anual    → "2026"
+   ─────────────────────────────────────────────────────────────── */
+window.getCheckPeriodKey=function(){
+  let freq=currentFreq||'Diaria';
+  if(freq==='Diaria'){
+    return document.getElementById('checkDate')?.value||today();
+  }
+  if(freq==='Semanal'){
+    return document.getElementById('checkWeek')?.value||isoWeek(today());
+  }
+  if(freq==='Mensual'){
+    return document.getElementById('checkMonth')?.value||today().slice(0,7);
+  }
+  if(freq==='Trimestral'){
+    let q=document.getElementById('checkQuarter')?.value||'Q2';
+    let y=document.getElementById('checkQuarterYear')?.value||new Date().getFullYear();
+    return y+'-'+q;
+  }
+  if(freq==='Semestral'){
+    let s=document.getElementById('checkSemester')?.value||'S1';
+    let y=document.getElementById('checkSemesterYear')?.value||new Date().getFullYear();
+    return y+'-'+s;
+  }
+  if(freq==='Anual'){
+    return String(document.getElementById('checkYear')?.value||new Date().getFullYear());
+  }
+  return today();
+};
+
+/* ── Obtener semana ISO (YYYY-Www) ─────────────────────────────── */
+window.isoWeek=function(dateStr){
+  let d=new Date(dateStr+'T12:00:00');
+  let jan4=new Date(d.getFullYear(),0,4);
+  let startOfW1=new Date(jan4);
+  startOfW1.setDate(jan4.getDate()-((jan4.getDay()||7)-1));
+  let weekNum=Math.floor(((d-startOfW1)/86400000)/7)+1;
+  let y=d.getFullYear();
+  if(weekNum<1){y--;weekNum=isoWeeksInYear(y);}
+  else if(weekNum>isoWeeksInYear(y)){y++;weekNum=1;}
+  return y+'-W'+String(weekNum).padStart(2,'0');
+};
+window.isoWeeksInYear=function(y){
+  let dec28=new Date(y,11,28);
+  return+isoWeek(dec28.toISOString().slice(0,10)).split('-W')[1];
+};
+
+/* ── Label descriptivo de semana ───────────────────────────────── */
+window.weekRangeLabel=function(isoW){
+  if(!isoW||!isoW.includes('-W')) return '';
+  let [y,w]=isoW.split('-W');
+  let jan4=new Date(+y,0,4);
+  let mon=new Date(jan4);
+  mon.setDate(jan4.getDate()-((jan4.getDay()||7)-1)+(+w-1)*7);
+  let sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  let fmt=d=>d.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+  return fmt(mon)+' al '+fmt(sun)+' de '+y;
+};
+
+/* ── Poblar los selectores de año ──────────────────────────────── */
+window.populateYearSelects=function(){
+  let years=new Set();
+  let thisYear=new Date().getFullYear();
+  // Años con datos
+  Object.keys(db.checks||{}).forEach(k=>{
+    let y=String(k||'').slice(0,4);
+    if(/^\d{4}$/.test(y)) years.add(+y);
+  });
+  // Siempre incluir año actual y los 2 anteriores y 1 siguiente
+  for(let y=thisYear-2;y<=thisYear+1;y++) years.add(y);
+  let sorted=[...years].sort((a,b)=>b-a);
+  let q=document.getElementById('checkQuarterYear');
+  let s=document.getElementById('checkSemesterYear');
+  let a=document.getElementById('checkYear');
+  [q,s,a].forEach(sel=>{
+    if(!sel) return;
+    let cur=sel.value||thisYear;
+    sel.innerHTML=sorted.map(y=>`<option value="${y}"${y==cur?' selected':''}>${y}</option>`).join('');
+  });
+};
+
+/* ── Mostrar/ocultar el selector correcto según frecuencia ─────── */
+window.showCheckPeriodFor=function(freq){
+  let boxes={
+    'Diaria':      'boxCheckDate',
+    'Semanal':     'boxCheckWeek',
+    'Mensual':     'boxCheckMonth',
+    'Trimestral':  'boxCheckQuarter',
+    'Semestral':   'boxCheckSemester',
+    'Anual':       'boxCheckYear',
+  };
+  Object.values(boxes).forEach(id=>{
+    let el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  let show=boxes[freq];
+  if(show){
+    let el=document.getElementById(show);
+    if(el) el.style.display='block';
+  }
+  /* Actualizar label semana */
+  let wv=document.getElementById('checkWeek')?.value;
+  let wl=document.getElementById('checkWeekLabel');
+  if(wl&&wv) wl.textContent=weekRangeLabel(wv);
+};
+
+/* ── Sincronizar compMode (periodicidad del cumplimiento) con el
+   selector de período del checklist ─────────────────────────── */
+window.syncFreqToCheckPeriod=function(){
+  let sel=document.getElementById('compMode')?.value||'all';
+  let freqMap={'Diaria':'Diaria','Semanal':'Semanal','Mensual':'Mensual',
+               'Trimestral':'Trimestral','Semestral':'Semestral','Anual':'Anual'};
+  if(freqMap[sel]){
+    currentFreq=freqMap[sel];
+    showCheckPeriodFor(currentFreq);
+    populateYearSelects();
+    renderTasks();
+  }
+};
+
+/* ── Override renderTasks para usar el período inteligente ─────── */
+(function patchRenderTasksWithPeriod(){
+  let _orig=window.renderTasks;
+  window.renderTasks=function(){
+    showCheckPeriodFor(currentFreq);
+    populateYearSelects();
+
+    /* Actualizar label semana */
+    let wv=document.getElementById('checkWeek')?.value;
+    let wl=document.getElementById('checkWeekLabel');
+    if(wl&&wv) wl.textContent=weekRangeLabel(wv);
+
+    /* Regenerar filtros de frecuencia */
+    if(window.freqFilters){
+      freqFilters.innerHTML=['Diaria','Semanal','Mensual','Trimestral','Semestral','Anual'].map(f=>
+        `<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';showCheckPeriodFor('${f}');renderTasks()">${f}</button>`
+      ).join('');
+    }
+
+    let periodKey=getCheckPeriodKey();
+    /* Para diaria, la clave es la fecha directamente (compatible con setCheck) */
+    /* Para otros períodos, usamos el periodKey como "fecha" en la clave       */
+
+    if(!window.taskList) return;
+    taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{
+      let c=db.checks[periodKey+'|'+i]||{};
+      return `<div class="task ${c.done?'done':''}">
+        <div class="tasktop">
+          <input type="checkbox" ${c.done?'checked':''} onchange="setCheckPeriod(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')">
+          <div>
+            <div class="act">${t.icon} ${t.actividad}</div>
+            <div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div>
+          </div>
+        </div>
+        <textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheckPeriod(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea>
+        <label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheckPeriod(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this.files[0]?.name||'')"></label>
+        ${c.fileName?`<span class="badge">📎 ${c.fileName}</span>`:''}
+      </div>`;
+    }).join('');
+  };
+})();
+
+/* ── setCheckPeriod: guarda con la clave del período activo ─────── */
+window.setCheckPeriod=function(idx,done,comment,fileName){
+  let periodKey=getCheckPeriodKey();
+  let key=periodKey+'|'+idx;
+  db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,date:periodKey,idx,freq:currentFreq,ts:Date.now()});
+  save();
+  if(document.getElementById('compliance')) renderCompliance();
+};
+
+/* ── pctBy y overallCompliancePct usan el período activo ───────── */
+(function patchComplianceCalc(){
+  window.pctBy=function(freq,rubro){
+    let resp=document.getElementById('compResp')?.value||'Todos';
+    let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>t.freq===freq&&t.rubro===rubro&&respMatches(t.resp,resp));
+    let periodKey=getCheckPeriodKey();
+    let done=items.filter(({i})=>{
+      let key=periodKey+'|'+i;
+      return db.checks[key]&&db.checks[key].done;
+    }).length;
+    return items.length?Math.round(done/items.length*100):0;
+  };
+
+  window.overallCompliancePct=function(){
+    let resp=document.getElementById('compResp')?.value||'Todos';
+    let sel=document.getElementById('compMode')?.value||'all';
+    let items=TASKS.map((t,i)=>({t,i})).filter(({t})=>(sel==='all'||t.freq===sel)&&respMatches(t.resp,resp));
+    let periodKey=getCheckPeriodKey();
+    let done=items.filter(({i})=>{
+      let key=periodKey+'|'+i;
+      return db.checks[key]&&db.checks[key].done;
+    }).length;
+    return items.length?Math.round(done/items.length*100):0;
+  };
+})();
+
+/* ── Agregar listeners a todos los selectores de período ────────── */
+(function bindPeriodListeners(){
+  setTimeout(function(){
+    let ids=['checkDate','checkWeek','checkMonth','checkQuarter','checkQuarterYear',
+             'checkSemester','checkSemesterYear','checkYear'];
+    ids.forEach(id=>{
+      let el=document.getElementById(id);
+      if(el) el.addEventListener('change',function(){
+        /* Label semana */
+        if(id==='checkWeek'){
+          let wl=document.getElementById('checkWeekLabel');
+          if(wl) wl.textContent=weekRangeLabel(this.value);
+        }
+        renderTasks();
+        if(document.getElementById('compliance')) renderCompliance();
+        renderOperationalKPIs();
+      });
+    });
+    /* Valores iniciales */
+    let cd=document.getElementById('checkDate'); if(cd&&!cd.value) cd.value=today();
+    let cw=document.getElementById('checkWeek'); if(cw&&!cw.value) cw.value=isoWeek(today());
+    let cm=document.getElementById('checkMonth'); if(cm&&!cm.value) cm.value=today().slice(0,7);
+    /* Actualizar label semana inicial */
+    let wl=document.getElementById('checkWeekLabel');
+    if(wl&&cw) wl.textContent=weekRangeLabel(cw.value);
+    populateYearSelects();
+    showCheckPeriodFor(currentFreq||'Diaria');
+  },600);
+})();
+
+/* ── renderCompliance muestra el período activo en el header ─────── */
+(function patchRenderComplianceHeader(){
+  let _origRC=window.renderCompliance;
+  window.renderCompliance=function(){
+    /* Reconstruir el label del período */
+    window._getActivePeriodLabel=function(){
+      let freq=currentFreq||'Diaria';
+      if(freq==='Diaria'){
+        let d=document.getElementById('checkDate')?.value||today();
+        return '📅 '+new Date(d+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      }
+      if(freq==='Semanal'){
+        let w=document.getElementById('checkWeek')?.value||isoWeek(today());
+        return '📅 Semana '+w.split('-W')[1]+' · '+weekRangeLabel(w);
+      }
+      if(freq==='Mensual'){
+        let m=document.getElementById('checkMonth')?.value||today().slice(0,7);
+        let [y,mo]=m.split('-');
+        return '📅 '+new Date(+y,+mo-1,1).toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+      }
+      if(freq==='Trimestral'){
+        let q=document.getElementById('checkQuarter')?.value||'Q2';
+        let y=document.getElementById('checkQuarterYear')?.value||new Date().getFullYear();
+        let labels={'Q1':'Enero–Marzo','Q2':'Abril–Junio','Q3':'Julio–Septiembre','Q4':'Octubre–Diciembre'};
+        return `📅 ${q} ${y} · ${labels[q]||''}`;
+      }
+      if(freq==='Semestral'){
+        let s=document.getElementById('checkSemester')?.value||'S1';
+        let y=document.getElementById('checkSemesterYear')?.value||new Date().getFullYear();
+        let labels={'S1':'Enero–Junio','S2':'Julio–Diciembre'};
+        return `📅 ${s} ${y} · ${labels[s]||''}`;
+      }
+      if(freq==='Anual'){
+        let y=document.getElementById('checkYear')?.value||new Date().getFullYear();
+        return `📅 Año ${y}`;
+      }
+      return '';
+    };
+    _origRC&&_origRC.call(this,...arguments);
+  };
+})();
+
+/* ═══════════════════════════════════════════════════════════════ */
 /* ═══════════════════ FIN DE FIXES ═══════════════════════════════════ */
 </script></body></html>

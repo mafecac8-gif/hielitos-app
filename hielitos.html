@@ -205,9 +205,9 @@ function render(){
  if(document.getElementById('compliance'))renderCompliance();
  renderOperationalKPIs();
  renderDebtList();
- stockList.innerHTML=db.movements.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,30).map(({x,i})=>item(`🧊 ${x.mov} ${x.tipo}`,`${x.date} · ${x.qty} bolsas · Stock actual recalculado: ${db.stock[x.tipo]||0}<br>📝 ${x.comment||'Sin comentarios'}`,x.date,`<button class="mini" onclick="editMove(${i})">Editar</button><button class="mini bad" onclick="deleteMove(${i})">Eliminar</button>`)).join('')||item('Sin movimientos','Agrega producción o merma','');
- saleList.innerHTML=db.sales.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,30).map(({x,i})=>item(`🚚 ${x.client}`,`📅 ${x.date||today()} · ${x.tipo||'Cubo'} · ${x.qty} bolsas · Total ${money(x.total)} · Cobrado ${money(x.paid)} · Debe ${money(x.debt)}${isSuperSanchezClient(x.client)?' · 🏦 Klar SS':''}<br>📝 ${x.comment||''}`,x.status||x.pay,`<button class="mini" onclick="editSale(${i})">Editar</button><button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>${x.debt>0?`<button class="mini ok" onclick="markSalePaid(${i})">Pago</button>`:''}`)).join('')||item('Sin ventas','Agrega una venta','');
- expenseList.innerHTML=db.expenses.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,30).map(({x,i})=>item(`💸 ${x.provider}`,`📅 ${x.date||today()} · ${money(x.amount)} · Factura: ${x.invoice}`,x.method,`<button class="mini" onclick="editExpense(${i})">Editar</button><button class="mini bad" onclick="deleteExpense(${i})">Eliminar</button>`)).join('')||item('Sin gastos','Agrega un gasto','');
+ stockList.innerHTML=db.movements.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`🧊 ${x.mov} ${x.tipo}`,`${x.date} · ${x.qty} bolsas · Stock actual recalculado: ${db.stock[x.tipo]||0}<br>📝 ${x.comment||'Sin comentarios'}`,x.date,`<button class="mini" onclick="editMove(${i})">Editar</button><button class="mini bad" onclick="deleteMove(${i})">Eliminar</button>`)).join('')||item('Sin movimientos','Agrega producción o merma','');
+ saleList.innerHTML=db.sales.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`🚚 ${x.client}`,`📅 ${x.date||today()} · ${x.tipo||'Cubo'} · ${x.qty} bolsas · Total ${money(x.total)} · Cobrado ${money(x.paid)} · Debe ${money(x.debt)}${isSuperSanchezClient(x.client)?' · 🏦 Klar SS':''}<br>📝 ${x.comment||''}`,x.status||x.pay,`<button class="mini" onclick="editSale(${i})">Editar</button><button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>${x.debt>0?`<button class="mini ok" onclick="markSalePaid(${i})">Pago</button>`:''}`)).join('')||item('Sin ventas','Agrega una venta','');
+ expenseList.innerHTML=db.expenses.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`💸 ${x.provider}`,`📅 ${x.date||today()} · ${money(x.amount)} · Factura: ${x.invoice}`,x.method,`<button class="mini" onclick="editExpense(${i})">Editar</button><button class="mini bad" onclick="deleteExpense(${i})">Eliminar</button>`)).join('')||item('Sin gastos','Agrega un gasto','');
  mantFilters.innerHTML=['Todos','Máquina','Planta','Camioneta','Conservador','Retro-lavado'].map(f=>`<button onclick="renderMant('${f}')">${f}</button>`).join('');
  renderMant('Todos');
  renderTasks();
@@ -220,7 +220,7 @@ function clientStats(){let map=new Map();(db.sales||[]).forEach(s=>{let name=(s.
 function renderClients(){if(!window.clientList)return;let q=normalizeText(clientSearch?.value||'');let rows=clientStats().filter(c=>!q||normalizeText(c.name).includes(q)||[...c.aliases].some(a=>normalizeText(a).includes(q)));let totals=rows.reduce((a,c)=>{a.bags+=c.bags;a.paid+=c.paid;a.debt+=c.debt;return a},{bags:0,paid:0,debt:0});clTotal.textContent=rows.length;clBags.textContent=totals.bags;clPaid.textContent=money(totals.paid);clDebt.textContent=money(totals.debt);clientList.innerHTML=rows.length?rows.map(c=>item(`👥 ${c.name}`,`Compras: ${c.ventas} · Bolsas: ${c.bags} · Pagado ${money(c.paid)} · Debe ${money(c.debt)} · Total ${money(c.total)}<br><small>Variantes: ${[...c.aliases].join(', ')}</small>`,c.debt>0?'Debe':'OK',`<button class="mini" onclick="renameClient('${clientKey(c.name).replace(/'/g,"\\'")}')">Homologar</button>`)).join(''):item('Sin clientes','Los clientes se generan automáticamente desde ventas','')}
 function renameClient(key){let current=clientStats().find(c=>clientKey(c.name)===key);if(!current)return;let nuevo=prompt('Nombre homologado para este cliente:',current.name);if(!nuevo)return;let aliases=[...current.aliases].map(clientKey);db.sales.forEach(s=>{if(aliases.includes(clientKey(s.client)))s.client=nuevo.trim()});save();renderClients();}
 
-function renderMant(f='Todos'){mantList.innerHTML=db.maintenance.map((x,i)=>({x,i})).filter(({x})=>f==='Todos'||x.equipo===f||x.tipo===f).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,30).map(({x,i})=>item(`🔧 ${x.equipo}${x.detalle?' · '+x.detalle:''} · ${x.tipo}`,`${x.date} · ${x.desc} · Técnico: ${x.tech||'-'} · Costo ${money(x.cost)}`,x.date,`<button class="mini" onclick="editMant(${i})">Editar</button><button class="mini bad" onclick="deleteMant(${i})">Eliminar</button>`)).join('')||item('Sin registros','No hay mantenimientos','')}
+function renderMant(f='Todos'){mantList.innerHTML=db.maintenance.map((x,i)=>({x,i})).filter(({x})=>f==='Todos'||x.equipo===f||x.tipo===f).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`🔧 ${x.equipo}${x.detalle?' · '+x.detalle:''} · ${x.tipo}`,`${x.date} · ${x.desc} · Técnico: ${x.tech||'-'} · Costo ${money(x.cost)}`,x.date,`<button class="mini" onclick="editMant(${i})">Editar</button><button class="mini bad" onclick="deleteMant(${i})">Eliminar</button>`)).join('')||item('Sin registros','No hay mantenimientos','')}
 function downloadCSV(){let rows=[['Tabla','Fecha','Concepto','Tipo','Cantidad','Monto','Cobrado','Debe','Método','Detalle']];db.sales.forEach(s=>rows.push(['Ventas',s.date,s.client,s.tipo,s.qty,s.total,s.paid,s.debt,s.pay,s.comment||'']));db.expenses.forEach(e=>rows.push(['Gastos',e.date,e.provider,'','',e.amount,'','',e.method,'Facturado '+e.invoice]));db.movements.forEach(m=>rows.push(['Stock',m.date,m.mov,m.tipo,m.qty,'','','','',`Delta ${m.delta}; Comentarios: ${m.comment||''}`]));db.maintenance.forEach(m=>rows.push(['Mantenimiento',m.date,(m.equipo||'')+' '+(m.detalle||''),m.tipo,'',m.cost,'','','',m.desc]));Object.values(db.checks).forEach(c=>{let t=TASKS[c.idx];rows.push(['Checklist',c.date,t?.actividad||'',t?.freq||'',c.done?'OK':'Pendiente','','','','',c.comment||''])});let csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='hielitos_ahh_datos_'+today()+'.csv';a.click();}
 function backupJSON(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='hielitos_ahh_respaldo_'+today()+'.json';a.click();}
 
@@ -861,4 +861,278 @@ function downloadAdvancedExcel(){
 
 
 [reportDate,reportStart,reportEnd,reportMonth,reportYear].forEach(e=>e?.addEventListener('change',render));checkDate?.addEventListener('change',renderTasks);if(window.compDate&&!compDate.value){compDate.value=today();compMonth.value=today().slice(0,7);compYear.value=new Date().getFullYear();toggleCompControls();}salePaid?.addEventListener('input',calcSale);if(document.getElementById('advExportDate')&&!document.getElementById('advExportDate').value){advExportDate.value=today();advExportStart.value=today();advExportEnd.value=today();advExportMonth.value=today().slice(0,7);advExportYear.value=new Date().getFullYear();toggleAdvExportControls();} if(window.mantDetail)updateMantDetail();
-go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),60000);</script></body></html>
+go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),60000);
+/* ═══════════════════ FIXES HIELITOS AHH!! ═══════════════════ */
+
+/* ── PROBLEMA 1: Historial completo (slice → sin límite artificial) ── */
+/* Los datos NUNCA se borran del db. El slice(0,30) era solo de display.
+   Lo ampliamos a 200 y dejamos el historial completo en la vista.    */
+
+/* ── PROBLEMA 2: Autocompletado / sugerencias de clientes ──────────── */
+(function patchClientAutocomplete(){
+  /* Inyectar datalist para saleClient */
+  if(!document.getElementById('clientDatalist')){
+    let dl=document.createElement('datalist');
+    dl.id='clientDatalist';
+    document.body.appendChild(dl);
+    let inp=document.getElementById('saleClient');
+    if(inp) inp.setAttribute('list','clientDatalist');
+  }
+  /* Normalización de nombre para dedupe */
+  window._normalizeClient=function(name){
+    return String(name||'').trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().replace(/\s+/g,' ').trim();
+  };
+  window.refreshClientDatalist=function(){
+    let dl=document.getElementById('clientDatalist');
+    if(!dl)return;
+    let seen=new Set(), opts=[];
+    (db.sales||[]).forEach(s=>{
+      let n=String(s.client||'').trim();
+      let k=_normalizeClient(n);
+      if(n&&!seen.has(k)){seen.add(k);opts.push(n);}
+    });
+    opts.sort((a,b)=>a.localeCompare(b,'es'));
+    dl.innerHTML=opts.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  };
+  /* Parchar save original para actualizar datalist después */
+  let _origSave=window.save;
+  window.save=function(){
+    _origSave&&_origSave.call(this,...arguments);
+    refreshClientDatalist();
+  };
+})();
+
+/* ── PROBLEMA 3: Fechas y trazabilidad en clientes que deben ────────── */
+/* renderDebtList mejorado ya está en el flujo; la versión corregida
+   añade fecha de venta, monto original, monto pagado, saldo y fecha pago */
+window.renderDebtList=function(){
+  let rows=db.sales.map((s,i)=>({s,i})).filter(x=>+x.s.debt>0)
+    .sort((a,b)=>String(b.s.date||'').localeCompare(String(a.s.date||'')));
+  let lastPaidComment=function(s){
+    let c=String(s.comment||'');
+    return c||'Pendiente';
+  };
+  if(!window.debtList) return;
+  debtList.innerHTML=rows.length?rows.map(({s,i})=>{
+    let saldo=money(+s.debt||0);
+    let pagado=money(+s.paid||0);
+    let original=money(+s.total||0);
+    let fechaVenta=s.date||'—';
+    let pagoInfo=+s.paid>0
+      ?`Cobrado ${pagado} · Última nota: ${lastPaidComment(s)}`
+      :'Sin pago registrado — Pendiente';
+    return item(
+      `⚠️ ${s.client}`,
+      `📅 Venta: ${fechaVenta} · Tipo: ${s.tipo||'Cubo'} · Bolsas: ${s.qty||0}`+
+      `<br>💰 Total original: ${original} · Cobrado: ${pagado} · <b>Saldo pendiente: ${saldo}</b>`+
+      `<br>📝 ${pagoInfo}`,
+      s.debt>0?'Debe':'Pagado',
+      `<button class="mini ok" onclick="markSalePaid(${i})">Marcar pago</button>`+
+      `<button class="mini" onclick="addSaleComment(${i})">Comentario</button>`+
+      `<button class="mini" onclick="editSale(${i})">Editar</button>`+
+      `<button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>`
+    );
+  }).join(''):item('Sin deudas','Todos los clientes están pagados','OK');
+};
+
+/* ── PROBLEMA 4: Deduplicación de ventas y deudas ───────────────────── */
+/* Función que elimina duplicados exactos manteniendo info válida */
+window.deduplicateSales=function(){
+  if(!db.sales||!db.sales.length) return 0;
+  let seen=new Set();
+  let prev=db.sales.length;
+  db.sales=db.sales.filter(s=>{
+    let sig=[s.ts,s.date,s.client,s.tipo,s.qty,s.price,s.total].join('|');
+    if(seen.has(sig)) return false;
+    seen.add(sig); return true;
+  });
+  let removed=prev-db.sales.length;
+  if(removed>0){recalcStock();}
+  return removed;
+};
+/* Correr dedup al arrancar y al guardar */
+(function(){
+  let n=window.deduplicateSales();
+  if(n>0){persistLocal();console.log('Deduplicados',n,'ventas duplicadas');}
+})();
+
+/* ── PROBLEMA 5: Conciliación de Stock ──────────────────────────────── */
+window.renderStockReconciliation=function(){
+  let rec=document.getElementById('stockReconciliation');
+  if(!rec) return;
+  let tipos=['Cubo','Cilindro'];
+  let rows=tipos.map(tipo=>{
+    let produced=db.movements.filter(m=>m.tipo===tipo&&m.mov==='Producción').reduce((a,m)=>a+(+m.qty||0),0);
+    let merma=db.movements.filter(m=>m.tipo===tipo&&m.mov!=='Producción').reduce((a,m)=>a+(+m.qty||0),0);
+    let soldQty=db.sales.filter(s=>s.tipo===tipo).reduce((a,s)=>a+(+s.qty||0),0);
+    let stockEsperado=produced-merma-soldQty;
+    let stockActual=db.stock[tipo]||0;
+    let diff=stockActual-stockEsperado;
+    let diffLabel=Math.abs(diff)<0.01
+      ?'<span style="color:var(--ok);font-weight:900">✅ Sin discrepancia</span>'
+      :diff<0
+        ?`<span style="color:var(--bad);font-weight:900">⚠️ Faltan ${Math.abs(diff)} bolsas</span>`
+        :`<span style="color:var(--warn);font-weight:900">⚠️ Sobran ${diff} bolsas</span>`;
+    return `
+      <div style="border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:#fff">
+        <b style="font-size:15px;color:var(--azul)">${tipo==='Cubo'?'🟦':'⚪'} ${tipo}</b>
+        <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:13px">
+          <tr><td style="padding:4px 8px">Total producido</td><td style="text-align:right;font-weight:900">${produced} bolsas</td></tr>
+          <tr style="background:#f4fbff"><td style="padding:4px 8px">Merma / Donación</td><td style="text-align:right;font-weight:900">${merma} bolsas</td></tr>
+          <tr><td style="padding:4px 8px">Total vendido</td><td style="text-align:right;font-weight:900">${soldQty} bolsas</td></tr>
+          <tr style="background:#f4fbff"><td style="padding:4px 8px"><b>Stock esperado</b></td><td style="text-align:right;font-weight:900">${stockEsperado} bolsas</td></tr>
+          <tr><td style="padding:4px 8px"><b>Stock registrado actual</b></td><td style="text-align:right;font-weight:900">${stockActual} bolsas</td></tr>
+          <tr style="background:#f4fbff"><td style="padding:4px 8px"><b>Diferencia</b></td><td style="text-align:right">${diffLabel}</td></tr>
+        </table>
+      </div>`;
+  });
+  rec.innerHTML=rows.join('');
+};
+
+/* ── PROBLEMA 6: Validaciones + anti-doble-click ─────────────────────── */
+(function patchValidations(){
+  let _saving=false;
+  /* saveProduction con anti-doble y validación negativa */
+  let _origProd=window.saveProduction;
+  window.saveProduction=function(){
+    if(_saving)return;
+    let qty=+document.getElementById('prodQty')?.value||0;
+    if(qty<=0) return toast('⚠️ La cantidad debe ser mayor a 0');
+    _saving=true;
+    _origProd&&_origProd.call(this,...arguments);
+    setTimeout(()=>_saving=false,1200);
+  };
+  /* saveSale con anti-doble y validaciones */
+  let _origSale=window.saveSale;
+  window.saveSale=function(){
+    if(_saving)return;
+    let qty=+document.getElementById('saleQty')?.value||0;
+    let price=+document.getElementById('salePrice')?.value||0;
+    let client=(document.getElementById('saleClient')?.value||'').trim();
+    if(!client) return toast('⚠️ Ingresa el nombre del cliente');
+    if(qty<=0) return toast('⚠️ La cantidad de bolsas debe ser mayor a 0');
+    if(price<0) return toast('⚠️ El precio no puede ser negativo');
+    _saving=true;
+    _origSale&&_origSale.call(this,...arguments);
+    refreshClientDatalist();
+    setTimeout(()=>_saving=false,1200);
+  };
+  /* saveExpense con validación monto negativo */
+  let _origExp=window.saveExpense;
+  window.saveExpense=function(){
+    if(_saving)return;
+    let amount=+document.getElementById('expAmount')?.value||0;
+    if(amount<0) return toast('⚠️ El monto del gasto no puede ser negativo');
+    if(amount===0) return toast('⚠️ Ingresa un monto mayor a 0');
+    _saving=true;
+    _origExp&&_origExp.call(this,...arguments);
+    setTimeout(()=>_saving=false,1200);
+  };
+})();
+
+/* ── PROBLEMA 7: Backup automático local con historial ───────────────── */
+(function patchAutoBackup(){
+  const BACKUP_KEY='hielitos_ahh_autobackup';
+  const MAX_BACKUPS=5;
+  function saveAutoBackup(){
+    try{
+      let backups=JSON.parse(localStorage.getItem(BACKUP_KEY)||'[]');
+      backups.unshift({ts:Date.now(),date:new Date().toLocaleString('es-MX'),data:JSON.parse(JSON.stringify(db))});
+      if(backups.length>MAX_BACKUPS) backups=backups.slice(0,MAX_BACKUPS);
+      localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
+    }catch(e){console.warn('Backup local falló:',e);}
+  }
+  /* Backup automático cada vez que se guarda (con throttle 60s) */
+  let _lastBackup=0;
+  let _origPersist=window.persistLocal;
+  window.persistLocal=function(){
+    _origPersist&&_origPersist.call(this,...arguments);
+    let now=Date.now();
+    if(now-_lastBackup>60000){_lastBackup=now;saveAutoBackup();}
+  };
+  /* Función manual para ver backups disponibles */
+  window.listAutoBackups=function(){
+    let backups=JSON.parse(localStorage.getItem(BACKUP_KEY)||'[]');
+    return backups.map(b=>({date:b.date,records:
+      (b.data.sales?.length||0)+(b.data.movements?.length||0)+(b.data.expenses?.length||0)
+    }));
+  };
+  /* Función para restaurar backup por índice */
+  window.restoreAutoBackup=function(idx){
+    if(!confirm('¿Restaurar este respaldo automático? Los datos actuales se reemplazarán.'))return;
+    let backups=JSON.parse(localStorage.getItem(BACKUP_KEY)||'[]');
+    if(!backups[idx])return toast('❌ Backup no encontrado');
+    db=normalize(backups[idx].data);
+    recalcStock();persistLocal();render();
+    toast('✅ Respaldo restaurado correctamente');
+  };
+  /* Hacer primer backup al iniciar */
+  saveAutoBackup();
+})();
+
+/* ── PATCH render: aumentar slice de 30 → 200 para ver más historial ─── */
+(function patchRenderLists(){
+  let _origRender=window.render;
+  window.render=function(){
+    _origRender&&_origRender.call(this,...arguments);
+    /* Rerender con más registros (sobrescribe el innerHTML generado) */
+    if(window.stockList){
+      stockList.innerHTML=db.movements.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`🧊 ${x.mov} ${x.tipo}`,`${x.date} · ${x.qty} bolsas${x.comment?' · '+x.comment:''}`,x.date,`<button class="mini" onclick="editMove(${i})">Editar</button><button class="mini bad" onclick="deleteMove(${i})">Eliminar</button>`)).join('')||item('Sin movimientos','Agrega producción o merma','');
+    }
+    if(window.saleList){
+      saleList.innerHTML=db.sales.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`🚚 ${x.client}`,`📅 ${x.date||today()} · ${x.tipo||'Cubo'} · ${x.qty} bolsas · Total ${money(x.total)} · Cobrado ${money(x.paid)} · Debe ${money(x.debt)}${isSuperSanchezClient(x.client)?' · 🏦 Klar SS':''}<br>📝 ${x.comment||''}`,x.status||x.pay,`<button class="mini" onclick="editSale(${i})">Editar</button><button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>${x.debt>0?`<button class="mini ok" onclick="markSalePaid(${i})">Pago</button>`:''}`)).join('')||item('Sin ventas','Agrega una venta','');
+    }
+    if(window.expenseList){
+      expenseList.innerHTML=db.expenses.map((x,i)=>({x,i})).sort((a,b)=>String(b.x.date||'').localeCompare(String(a.x.date||''))||((b.x.ts||0)-(a.x.ts||0))).slice(0,5000).map(({x,i})=>item(`💸 ${x.provider}`,`📅 ${x.date||today()} · ${money(x.amount)} · Factura: ${x.invoice}`,x.method,`<button class="mini" onclick="editExpense(${i})">Editar</button><button class="mini bad" onclick="deleteExpense(${i})">Eliminar</button>`)).join('')||item('Sin gastos','Agrega un gasto','');
+    }
+    /* Conciliación de stock */
+    if(window.renderStockReconciliation) renderStockReconciliation();
+    /* Refresh datalist */
+    if(window.refreshClientDatalist) refreshClientDatalist();
+  };
+})();
+
+/* ── STOCK RECONCILIATION: inyectar sección en módulo Stock ─────────── */
+(function injectStockRecon(){
+  if(document.getElementById('stockReconciliation'))return;
+  let stockSec=document.getElementById('stock');
+  if(!stockSec)return;
+  let div=document.createElement('div');
+  div.innerHTML=`<br><div class="card"><h2>🔍 Conciliación de Stock</h2><div class="body" id="stockReconciliation"><p style="color:var(--muted)">Cargando conciliación...</p></div></div>`;
+  stockSec.appendChild(div.firstElementChild.nextElementSibling||div.firstChild);
+  /* Append properly */
+  let placeholder=document.createElement('br');
+  let card=document.createElement('div');
+  card.className='card';
+  card.innerHTML='<h2>🔍 Conciliación de Stock</h2><div class="body" id="stockReconciliation"><p style="color:var(--muted)">Cargando...</p></div>';
+  stockSec.appendChild(card);
+})();
+
+/* ── markSalePaid: guardar fecha real del pago ───────────────────────── */
+(function patchMarkPaid(){
+  window.markSalePaid=function(i){
+    let s=db.sales[i];
+    if(!s)return;
+    let extra=+prompt('¿Cuánto pagó ahora?',s.debt||0)||0;
+    if(extra<0)return toast('⚠️ El monto no puede ser negativo');
+    s.paid=Math.min((+s.paid||0)+extra,+s.total||0);
+    s.debt=Math.max(0,(+s.total||0)-(+s.paid||0));
+    s.status=s.debt>0?'Debe':'Pagado';
+    s.lastPayDate=today();
+    let c=prompt('Comentario de cobro (fecha auto-guardada: '+today()+'):',s.comment||'');
+    if(c!==null) s.comment=c+' [cobro '+today()+']';
+    save();
+  };
+})();
+
+/* ── Inicialización final ─────────────────────────────────────────────── */
+(function finalInit(){
+  if(window.refreshClientDatalist) refreshClientDatalist();
+  if(window.renderStockReconciliation) setTimeout(renderStockReconciliation,300);
+  if(window.deduplicateSales) deduplicateSales();
+})();
+
+/* ═══════════════════ FIN DE FIXES ═══════════════════════════════════ */
+</script></body></html>

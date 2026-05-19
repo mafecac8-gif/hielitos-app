@@ -230,6 +230,7 @@
 <!-- TABS internos del módulo -->
 <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto">
 <button id="tabActAct" class="btn" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('activos')">📦 Activos</button>
+<button id="tabActPag" class="btn alt" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('pagos')">💳 Recuperación de Inversión</button>
 <button id="tabActMant" class="btn alt" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('mant')">🔧 Fondo Mantenimiento</button>
 </div>
 
@@ -242,7 +243,7 @@
 </div></div>
 </div>
 
-<!-- PANEL: Recuperación de inversión eliminado: el historial se integra en cada activo -->
+<!-- PANEL: Recuperación de inversión (pagos) -->
 <div id="panelPagos" style="display:none">
 <div class="card"><h2>💳 Recuperación de Inversión <button class="mini ok" onclick="openAddPagoActivoModal()">＋ Registrar Pago</button></h2>
 <div class="body">
@@ -315,19 +316,15 @@
 <h2 style="margin:0 0 16px;color:var(--azul)">💳 Registrar Recuperación de Inversión</h2>
 <div class="field"><label>Activo</label><select id="pagoActivoSel"></select></div>
 <div class="field"><label>Fecha pago</label><input id="pagoFecha" type="date"></div>
-<div class="field"><label>Origen del dinero</label>
-<div class="seg" style="grid-template-columns:repeat(2,1fr)">
+<div class="field"><label>Método de pago</label>
+<div class="seg three">
 <div class="choice active" data-pago-method="Efectivo">💵 Efectivo</div>
-<div class="choice" data-pago-method="Transferencia">🏦 Transferencia</div>
-<div class="choice" data-pago-method="KLAR_SANCHEZ">🟦 KLAR Sánchez</div>
-<div class="choice" data-pago-method="KLAR_CONSERVADORES">🧊 KLAR Conservadores</div>
-<div class="choice" data-pago-method="Mixto" style="grid-column:1/-1">🔀 Mixto</div>
+<div class="choice" data-pago-method="KLAR">🏦 KLAR</div>
+<div class="choice" data-pago-method="Mixto">🔀 Mixto</div>
 </div></div>
 <div class="row" id="pagoMixtoRow" style="display:none">
-<div class="field"><label>Efectivo ($)</label><input id="pagoEfectivo" type="number" value="0"></div>
-<div class="field"><label>Transferencia ($)</label><input id="pagoTransferencia" type="number" value="0"></div>
-<div class="field"><label>KLAR Sánchez ($)</label><input id="pagoKlarSanchez" type="number" value="0"></div>
-<div class="field"><label>KLAR Conservadores ($)</label><input id="pagoKlarConservadores" type="number" value="0"></div>
+<div class="field"><label>Monto efectivo ($)</label><input id="pagoEfectivo" type="number" value="0"></div>
+<div class="field"><label>Monto KLAR ($)</label><input id="pagoKlarMonto" type="number" value="0"></div>
 </div>
 <div class="field" id="pagoMontoRow"><label>Monto total ($)</label><input id="pagoMonto" type="number" value="0"></div>
 <div class="field"><label>Comentario</label><input id="pagoComment" placeholder="Ej: Pago mensual mayo"></div>
@@ -355,6 +352,45 @@ function isSuperSanchezClient(client){let c=normalizeText(client);return /super\
 function klarIncomeFromSales(list){return (list||[]).filter(s=>isSuperSanchezClient(s.client)).reduce((a,s)=>a+(+s.paid||0),0)}
 function klarExpenseFromExpenses(list){return (list||[]).filter(e=>String(e.method||'')==='Apartado Klar').reduce((a,e)=>a+(+e.amount||0),0)}
 const blank={stock:{Cubo:0,Cilindro:0},movements:[],sales:[],expenses:[],maintenance:[],checks:{},activos:[],pagosActivos:[],__updatedAt:0};
+/* ═══ PARCHE CONSERVADOR 2026-05-19: no borrar storage + importes reales Excel ═══ */
+const EXCEL_ACTIVOS_PATCH={
+  ACT001:{mantAnual:800}, ACT002:{mantAnual:1600}, ACT003:{mantAnual:500}, ACT004:{mantAnual:500}, ACT005:{mantAnual:500},
+  ACT006:{mantAnual:800}, ACT007:{mantAnual:800}, ACT010:{mantAnual:20000}, ACT011:{mantAnual:3500}, ACT012:{mantAnual:2000},
+  ACT014:{mantAnual:500},
+  ACT015:{mantAnual:800,efectivoGuardado:10539,klarConservadores:1171},
+  ACT016:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
+  ACT017:{mantAnual:800,efectivoGuardado:8811,klarConservadores:2171},
+  ACT008:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
+  ACT009:{mantAnual:800,efectivoGuardado:2516,klarConservadores:1258}
+};
+function n2(v){let n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0;}
+function applyExcelActivosPatch(d){
+  if(!d||!Array.isArray(d.activos)) return d;
+  d.activos.forEach(a=>{
+    const p=EXCEL_ACTIVOS_PATCH[a.id]; if(!p) return;
+    Object.assign(a,p);
+    if(p.mantAnual!==undefined){a.aplicaMant=true;a.mantPorConfirmar=false;}
+    a.efectivoGuardado=n2(a.efectivoGuardado);
+    a.klarConservadores=n2(a.klarConservadores);
+    a.transferenciaGuardada=n2(a.transferenciaGuardada);
+  });
+  return d;
+}
+function fondoDisponibleActivo(a){return n2(a.efectivoGuardado)+n2(a.transferenciaGuardada)+n2(a.klarConservadores);}
+function hasFondoExcel(a){return fondoDisponibleActivo(a)>0;}
+function safeParseJSON(s){try{return JSON.parse(s)}catch(e){return null}}
+function looksLikeHielitosDB(x){return x&&typeof x==='object'&&(Array.isArray(x.sales)||Array.isArray(x.expenses)||Array.isArray(x.movements)||Array.isArray(x.maintenance)||Array.isArray(x.activos)||Array.isArray(x.pagosActivos)||x.stock||x.checks)}
+function loadBestLocalDB(){
+  const candidates=[];
+  [KEY,OLDKEY,'hielitosData','hielitos_ahh_db','hielitos_ahh_db_v1'].forEach(k=>{let raw=localStorage.getItem(k);let obj=safeParseJSON(raw);if(looksLikeHielitosDB(obj))candidates.push({k,obj});});
+  for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i); if(!k||candidates.some(c=>c.k===k)) continue; let obj=safeParseJSON(localStorage.getItem(k)); if(looksLikeHielitosDB(obj)) candidates.push({k,obj});}
+  if(!candidates.length) return cloneBlank();
+  candidates.sort((a,b)=>recordCount(b.obj)-recordCount(a.obj)||((+b.obj.__updatedAt||0)-(+a.obj.__updatedAt||0)));
+  let best=normalize(candidates[0].obj);
+  try{localStorage.setItem(KEY+'_backup_before_patch_'+Date.now(),JSON.stringify(best));}catch(e){}
+  return best;
+}
+
 /* ═══ ACTIVOS MAESTROS PRE-CARGADOS (de Lista_Equipos_Hielitos_AHH) ═══ */
 const ACTIVOS_MASTER=[
   /* ─── ACTIVOS (en curso de recuperación — aún se deben) ─── */
@@ -365,27 +401,27 @@ const ACTIVOS_MASTER=[
 
   {id:'ACT015',nombre:'Conservador FrioCima SS1 (Alejo Torres)',categoria:'Conservador',cliente:'SS1 Alejo Torres',
    fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10539,klarConservadoresInicial:1171,
+   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10539,klarConservadores:1171,
    notas:'FCC-40-2 / E25/14545 / 40 bolsas / 10 pagados, faltan 8'},
 
   {id:'ACT016',nombre:'Conservador FrioCima SS2 (Mercado)',categoria:'Conservador',cliente:'SS2 Mercado',
    fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadoresInicial:1171,
+   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadores:1171,
    notas:'FCC-40-2 / E25/14561 / 40 bolsas / 10 pagados, faltan 8'},
 
   {id:'ACT008',nombre:'Conservador FrioCima SS3 (Centro Salud)',categoria:'Conservador',cliente:'SS3 Centro Salud',
    fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadoresInicial:1171,
+   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadores:1171,
    notas:'FCC-40-2 / D24/14508 / 40 bolsas / 10 pagados, faltan 8'},
 
   {id:'ACT017',nombre:'Conservador FrioCima SS4 (Alejo Torres)',categoria:'Conservador',cliente:'SS4 Alejo Torres',
    fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:8811,klarConservadoresInicial:2171,
+   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:8811,klarConservadores:2171,
    notas:'FCC-40-2 / E25/14554 / 40 bolsas / 10 pagados, faltan 8'},
 
   {id:'ACT009',nombre:'Conservador FrioCima SS10 (Jalpa)',categoria:'Conservador',cliente:'SS10 Jalpa',
    fechaCompra:'2025-08-01',costo:22642.82,plazo:18,mesesPagados:3,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:2516,klarConservadoresInicial:1258,
+   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:2516,klarConservadores:1258,
    notas:'FCC-40-2 / G25/15414 / 40 bolsas / 3 pagados, faltan 15'},
 
   {id:'ACT020',nombre:'Auto BYD Dolphin',categoria:'Vehículo',cliente:'',
@@ -450,13 +486,13 @@ const ACTIVOS_MASTER=[
 
   {id:'ACT006',nombre:'Conservador Glacial 40b (Local)',categoria:'Conservador',cliente:'Local',
    fechaCompra:'2024-02-09',costo:14945,plazo:18,mesesPagados:18,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:500,
+   estado:'Reinvertido',aplicaMant:true,mantAnual:800,
    reinvertidoEn:'FrioCima SS1–SS4',
    notas:'GELO125CWHCS / Serie 22H60104-Z / 40 bolsas / Liquidado y reinvertido en FrioCima'},
 
   {id:'ACT007',nombre:'Conservador Glacial 40b (SS Ayapa)',categoria:'Conservador',cliente:'SS Ayapa',
    fechaCompra:'2024-02-20',costo:14097,plazo:18,mesesPagados:18,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:500,
+   estado:'Reinvertido',aplicaMant:true,mantAnual:800,
    reinvertidoEn:'FrioCima SS1–SS4',
    notas:'GELO125CWHCS / Serie 22450186-Z / 40 bolsas / Liquidado y reinvertido en FrioCima'},
 ];
@@ -481,45 +517,22 @@ function normalize(x){
   /* Si activos vacío y hay master, poblar con maestros */
   if(d.activos.length===0){d.activos=JSON.parse(JSON.stringify(ACTIVOS_MASTER));}
   d.activos.forEach(a=>{a.id=a.id||nextActivoId();a.costo=+a.costo||0;a.plazo=+a.plazo||18;a.mantAnual=+a.mantAnual||0;a.mesesPagados=+a.mesesPagados||0;if(a.aplicaMant===undefined)a.aplicaMant=true;if(a.costoPorConfirmar===undefined)a.costoPorConfirmar=false;if(a.mantPorConfirmar===undefined)a.mantPorConfirmar=false;});
-  d.pagosActivos.forEach(p=>{p.id=p.id||('PAG'+p.ts);p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.transferencia=+p.transferencia||0;p.klarSanchez=+p.klarSanchez||0;p.klarConservadores=+p.klarConservadores||(+p.klarMonto||0);p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
+  d.pagosActivos.forEach(p=>{p.id=p.id||('PAG'+p.ts);p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
+  applyExcelActivosPatch(d);
   return d;
 }
 function maxTs(d){let a=[...(d.sales||[]),...(d.expenses||[]),...(d.movements||[]),...(d.maintenance||[])].map(x=>+x.ts||0); Object.values(d.checks||{}).forEach(c=>a.push(+c.ts||0)); return Math.max(0,...a);}
-function newer(a,b){return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;}
+function newer(a,b){
+  a=normalize(a); b=normalize(b);
+  const ca=recordCount(a), cb=recordCount(b);
+  if(ca>0&&cb===0) return a;
+  if(cb>0&&ca===0) return b;
+  if(Math.abs(ca-cb)>=3) return ca>cb?a:b;
+  return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;
+}
 function setOnlineStatus(txt){let p=document.querySelector('.pill'); if(p) p.innerHTML=txt+'<br><b id="today">'+new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+'</b>';}
-function safeJSONParse(txt,fallback){try{return txt?JSON.parse(txt):fallback;}catch(e){console.error('JSON localStorage inválido',e);return fallback;}}
-function dbScoreRaw(raw){
-  try{
-    let x=typeof raw==='string'?JSON.parse(raw):raw; if(x&&x.db) x=x.db; if(!x||typeof x!=='object') return -1;
-    return (Array.isArray(x.sales)?x.sales.length:0)*10+
-           (Array.isArray(x.movements)?x.movements.length:0)*10+
-           (Array.isArray(x.expenses)?x.expenses.length:0)*10+
-           (Array.isArray(x.maintenance)?x.maintenance.length:0)*10+
-           (x.checks&&typeof x.checks==='object'?Object.keys(x.checks).length:0)*5+
-           (Array.isArray(x.activos)?x.activos.length:0)*2+
-           (Array.isArray(x.pagosActivos)?x.pagosActivos.length:0)*3+
-           (+x.__updatedAt||0)/1000000000000;
-  }catch(e){return -1;}
-}
-function loadBestLocalDB(){
-  const keys=[KEY,OLDKEY,'hielitos_ahh_db_v1','hielitos_ahh_db','hielitosDB','hielitos_db','db'];
-  let bestRaw=null,bestKey='',bestScore=-1;
-  keys.forEach(k=>{let raw=localStorage.getItem(k);let sc=dbScoreRaw(raw);if(sc>bestScore){bestScore=sc;bestRaw=raw;bestKey=k;}});
-  /* Si alguna versión anterior tiene más datos que una versión nueva vacía, usar la de más historial. */
-  if(bestRaw){
-    try{localStorage.setItem(KEY+'_backup_before_rescue_'+Date.now(),bestRaw);}catch(e){}
-    console.warn('HIELITOS AHH!! Storage rescue: cargando datos desde',bestKey,'score',bestScore);
-    return normalize(safeJSONParse(bestRaw, JSON.stringify(blank)));
-  }
-  return normalize(blank);
-}
-let db=loadBestLocalDB();
-function persistLocal(){
-  /* Guardado seguro: NO limpia localStorage, NO cambia de origen y NO elimina historiales existentes. */
-  localStorage.setItem(KEY,JSON.stringify(db));
-}
-/* Grabar inmediatamente en la llave actual SOLO después de elegir la base local con más historial. */
-persistLocal();
+let db=normalize(loadBestLocalDB());
+function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
 function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
 function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
 async function fetchRemoteDB(){
@@ -559,10 +572,7 @@ async function syncNow(silent=false){
   try{
     await ensureStorageBucket();
     const remote=await fetchRemoteDB();
-    if(remote){
-      /* Nunca reemplazar la base local completa con la nube. Fusionar y conservar historial local. */
-      db=mergeKeepHistory(db,remote);
-    }
+    if(remote){ db=mergeKeepHistory(db, newer(db,remote)); }
     db.__updatedAt=Date.now(); persistLocal(); recalcStock(); render();
     await uploadRemoteDB();
     setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado con Supabase');
@@ -589,15 +599,9 @@ function mergeKeepHistory(a,b){
   const sig=(x)=>[x.ts,x.date,x.client,x.tipo,x.qty,x.total,x.provider,x.amount,x.equipo,x.desc,x.mov].map(v=>String(v??'')).join('|');
   ['sales','movements','expenses','maintenance'].forEach(k=>{let m=new Map();[...(a[k]||[]),...(b[k]||[])].forEach(x=>m.set(sig(x),x));a[k]=[...m.values()]});
   a.checks=Object.assign({},b.checks||{},a.checks||{});
-  /* Fusionar CONTROL DE ACTIVOS sin borrar lo que ya estaba en localStorage. Local gana si hay conflicto. */
-  const mergeById=(localArr,remoteArr,key='id')=>{
-    const m=new Map();
-    (remoteArr||[]).forEach(x=>{ if(x&&x[key]) m.set(String(x[key]), JSON.parse(JSON.stringify(x))); });
-    (localArr||[]).forEach(x=>{ if(x&&x[key]) m.set(String(x[key]), Object.assign({}, m.get(String(x[key]))||{}, x)); });
-    return [...m.values()];
-  };
-  a.activos=mergeById(a.activos||[],b.activos||[],'id');
-  a.pagosActivos=mergeById(a.pagosActivos||[],b.pagosActivos||[],'id');
+  ['activos'].forEach(k=>{let m=new Map();[...(b[k]||[]),...(a[k]||[])].forEach(x=>m.set(x.id||sig(x),Object.assign({},m.get(x.id||sig(x))||{},x)));a[k]=[...m.values()]});
+  ['pagosActivos'].forEach(k=>{let m=new Map();[...(b[k]||[]),...(a[k]||[])].forEach(x=>m.set(x.id||sig(x),x));a[k]=[...m.values()]});
+  applyExcelActivosPatch(a);
   a.__updatedAt=Math.max(+a.__updatedAt||0,+b.__updatedAt||0,Date.now());
   recalcStockFor(a);
   return a;
@@ -1498,10 +1502,18 @@ function cuotaMensual(a){
   if(!costo||!plazo) return 0;
   return costo/plazo;
 }
-function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-(+a.mesesPagados||0)); }
-function acumuladoRecuperado(a){ return (db.pagosActivos||[]).filter(p=>p.activoId===a.id).reduce((s,p)=>s+(+p.monto||0),0); }
-function saldoPendienteActivo(a){ return Math.max(0,(+a.costo||0)-acumuladoRecuperado(a)); }
-function avancePct(a){ let c=+a.costo||0; if(!c) return(a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
+function pagosRegistradosActivo(a){return (db.pagosActivos||[]).filter(p=>p.activoId===a.id).reduce((s,p)=>s+n2(p.monto),0);}
+function recuperadoTeoricoMeses(a){return Math.min(n2(a.costo),cuotaMensual(a)*(+a.mesesPagados||0));}
+function recuperadoBaseActivo(a){
+  if(hasFondoExcel(a)) return fondoDisponibleActivo(a);
+  if(['Reinvertido','Liquidado'].includes(a.estado)) return n2(a.costo);
+  return recuperadoTeoricoMeses(a);
+}
+function acumuladoRecuperado(a){ return Math.min(n2(a.costo)||Infinity, recuperadoBaseActivo(a)); }
+function mesesPagadosReales(a){let cuota=cuotaMensual(a); return cuota?Math.min(+a.plazo||0,Math.floor(acumuladoRecuperado(a)/cuota)):(+a.mesesPagados||0);}
+function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-mesesPagadosReales(a)); }
+function saldoPendienteActivo(a){ return Math.max(0,n2(a.costo)-acumuladoRecuperado(a)); }
+function avancePct(a){ let c=n2(a.costo); if(!c) return(a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
 
 function activoSemaforo(a){
   if(a.estado==='Reinvertido') return {color:'#8b5cf6',label:'🔵 Reinvertido',bg:'#f5f3ff'};
@@ -1541,8 +1553,8 @@ function renderActivosKpis(){
   let atras=ac.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
   let pagoMensual=ac.filter(a=>a.estado==='Activo'&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaMensual(a),0);
   let saldoPend=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+saldoPendienteActivo(a),0);
-  let fondoRecup=(db.pagosActivos||[]).reduce((s,p)=>s+(+p.monto||0),0);
-  let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+(+a.mantAnual||0),0);
+  let fondoRecup=ac.filter(a=>['Activo','Stand By'].includes(a.estado)).reduce((s,a)=>s+fondoDisponibleActivo(a),0);
+  let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+n2(a.mantAnual),0);
   let mantMensual=mantAnualTotal/12;
   if(window.akTotal) akTotal.textContent=total;
   if(window.akEnCurso) akEnCurso.textContent=enCurso;
@@ -1552,8 +1564,8 @@ function renderActivosKpis(){
   if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual)+(pagoMensual===0&&enCurso>0?' (confirmar costos)':'');
   if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
   if(window.akFondoRecup) akFondoRecup.textContent=money(fondoRecup);
-  if(window.akMantAnualTotal) akMantAnualTotal.textContent=money(mantAnualTotal)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?'+?':'');
-  if(window.akMantMensual) akMantMensual.textContent=money(mantMensual)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?'+?':'');
+  if(window.akMantAnualTotal) akMantAnualTotal.textContent=money(mantAnualTotal);
+  if(window.akMantMensual) akMantMensual.textContent=money(mantMensual);
 }
 
 /* ─── Lista de activos ─── */
@@ -1793,7 +1805,13 @@ function savePagoActivo(){
   if(!db.pagosActivos) db.pagosActivos=[];
   db.pagosActivos.push({id:'PAG'+Date.now(),activoId,fecha,metodo,monto,efectivo,klarMonto,comment,tipo:'Recuperacion',ts:Date.now()});
   let activo=(db.activos||[]).find(a=>a.id===activoId);
-  if(activo&&!activo.costoPorConfirmar){ let cuota=cuotaMensual(activo); if(cuota>0) activo.mesesPagados=Math.min(activo.plazo,activo.mesesPagados+Math.round(monto/cuota)); }
+  if(activo&&!activo.costoPorConfirmar){
+    if(metodo==='Efectivo') activo.efectivoGuardado=n2(activo.efectivoGuardado)+monto;
+    else if(metodo==='KLAR Conservadores'||metodo==='Apartado KLAR Conservadores') activo.klarConservadores=n2(activo.klarConservadores)+monto;
+    else if(metodo==='Transferencia') activo.transferenciaGuardada=n2(activo.transferenciaGuardada)+monto;
+    else if(metodo==='Mixto'){activo.efectivoGuardado=n2(activo.efectivoGuardado)+efectivo; activo.klarConservadores=n2(activo.klarConservadores)+klarMonto;}
+    let cuota=cuotaMensual(activo); if(cuota>0) activo.mesesPagados=mesesPagadosReales(activo);
+  }
   closePagoActivoModal(); save(); renderActivos(); toast('✅ Pago registrado');
 }
 function deletePago(id){ if(confirm('¿Eliminar este pago?')){db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.id!==id);save();renderActivos();} }
@@ -1812,192 +1830,6 @@ function deletePago(id){ if(confirm('¿Eliminar este pago?')){db.pagosActivos=(d
     });
   },500);
 })();
-
-
-/* ═══ PARCHE PRO — CONTROL DE ACTIVOS FINANCIERO ═══ */
-function nAct(v){ return Number.isFinite(+v)?+v:0; }
-function pagoBreakdown(p){
-  let ef=nAct(p.efectivo);
-  let tr=nAct(p.transferencia);
-  let ks=nAct(p.klarSanchez || p.klarSanchezMonto || (p.metodo==='KLAR_SANCHEZ'?p.monto:0));
-  let kc=nAct(p.klarConservadores || p.klarConservadoresMonto || (p.metodo==='KLAR_CONSERVADORES'?p.monto:0));
-  if(!ef && !tr && !ks && !kc){
-    if(p.metodo==='Efectivo') ef=nAct(p.monto);
-    else if(p.metodo==='Transferencia') tr=nAct(p.monto);
-    else if(p.metodo==='KLAR') kc=nAct(p.klarMonto||p.monto); /* compatibilidad: KLAR anterior se trata como Conservadores */
-  }
-  return {efectivo:ef, transferencia:tr, klarSanchez:ks, klarConservadores:kc, total:ef+tr+ks+kc};
-}
-function pagosDeActivo(a){ return (db.pagosActivos||[]).filter(p=>p.activoId===a.id && p.tipo!=='Mantenimiento'); }
-function acumuladoPorOrigen(a){
-  return pagosDeActivo(a).reduce((acc,p)=>{let b=pagoBreakdown(p); acc.efectivo+=b.efectivo; acc.transferencia+=b.transferencia; acc.klarSanchez+=b.klarSanchez; acc.klarConservadores+=b.klarConservadores; acc.total+=b.total||nAct(p.monto); return acc;},{efectivo:0,transferencia:0,klarSanchez:0,klarConservadores:0,total:0});
-}
-function acumuladoRecuperado(a){ return acumuladoPorOrigen(a).total; }
-function mesesPagadosReal(a){ let cuota=cuotaMensual(a); if(!cuota) return nAct(a.mesesPagados); return Math.min(nAct(a.plazo)||0, Math.floor(acumuladoRecuperado(a)/cuota)); }
-function mesesRestantes(a){ return Math.max(0,(nAct(a.plazo)||0)-mesesPagadosReal(a)); }
-function saldoPendienteActivo(a){ return Math.max(0,nAct(a.costo)-acumuladoRecuperado(a)); }
-function avancePct(a){ let c=nAct(a.costo); if(!c) return mesesPagadosReal(a)>0?100:0; return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
-function seedPagosInicialesActivos(){
-  if(!db || !Array.isArray(db.activos)) return;
-  db.pagosActivos=Array.isArray(db.pagosActivos)?db.pagosActivos:[];
-  db.activos.forEach(a=>{
-    let ya=db.pagosActivos.some(p=>p.activoId===a.id && p.autoInicial);
-    let tienePagos=db.pagosActivos.some(p=>p.activoId===a.id && p.tipo!=='Mantenimiento');
-    let mp=nAct(a.mesesPagados), cuota=cuotaMensual(a), costo=nAct(a.costo);
-    if(!ya && !tienePagos && mp>0 && cuota>0 && costo>0){
-      let monto=Math.min(costo, mp*cuota);
-      db.pagosActivos.push({id:'PAGINI_'+a.id,activoId:a.id,fecha:a.fechaCompra||today(),metodo:'KLAR_CONSERVADORES',monto:monto,efectivo:0,transferencia:0,klarSanchez:0,klarConservadores:monto,comment:'Migración automática por meses ya pagados',tipo:'Recuperacion',autoInicial:true,ts:Date.now()-100000});
-    }
-  });
-}
-function resumenActivosGlobal(){
-  let r={total:0,efectivo:0,transferencia:0,klarSanchez:0,klarConservadores:0};
-  (db.activos||[]).forEach(a=>{let b=acumuladoPorOrigen(a); r.efectivo+=b.efectivo; r.transferencia+=b.transferencia; r.klarSanchez+=b.klarSanchez; r.klarConservadores+=b.klarConservadores; r.total+=b.total;});
-  return r;
-}
-
-renderActivosKpis=function(){
-  seedPagosInicialesActivos();
-  let ac=db.activos||[];
-  let total=ac.length;
-  let enCurso=ac.filter(a=>a.estado==='Activo').length;
-  let standBy=ac.filter(a=>a.estado==='Stand By').length;
-  let reinvert=ac.filter(a=>a.estado==='Reinvertido').length;
-  let atras=ac.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
-  let pagoMensual=ac.filter(a=>a.estado==='Activo'&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaMensual(a),0);
-  let saldoPend=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+saldoPendienteActivo(a),0);
-  let rec=resumenActivosGlobal();
-  let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&nAct(a.mantAnual)>0).reduce((s,a)=>s+nAct(a.mantAnual),0);
-  let mantMensual=mantAnualTotal/12;
-  if(window.akTotal) akTotal.textContent=total;
-  if(window.akEnCurso) akEnCurso.textContent=enCurso;
-  if(window.akStandBy) akStandBy.textContent=standBy;
-  if(window.akReinvertidos) akReinvertidos.textContent=reinvert;
-  if(window.akAtrasados) akAtrasados.textContent=atras;
-  if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual);
-  if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
-  if(window.akFondoRecup) akFondoRecup.innerHTML=money(rec.total)+`<small style="display:block;color:var(--muted);font-size:10px">Ef. ${money(rec.efectivo)} · Transf. ${money(rec.transferencia)} · KLAR Cons. ${money(rec.klarConservadores)}</small>`;
-  if(window.akMantAnualTotal) akMantAnualTotal.textContent=money(mantAnualTotal)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?' por confirmar':'');
-  if(window.akMantMensual) akMantMensual.textContent=money(mantMensual)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?' por confirmar':'');
-};
-
-renderActivosList=function(){
-  seedPagosInicialesActivos();
-  if(!window.activosList) return;
-  let estados=['Todos','Activo','Stand By','Reinvertido','Liquidado','Fuera de uso'];
-  if(window.activosFilters){activosFilters.innerHTML=estados.map(e=>`<button class="${e===currentActivoFilter?'active':''}" onclick="currentActivoFilter='${e}';renderActivosList()">${e}</button>`).join('');}
-  let ac=(db.activos||[]).filter(a=>currentActivoFilter==='Todos'||a.estado===currentActivoFilter);
-  let order=['Activo','Stand By','Reinvertido','Liquidado','Fuera de uso']; ac.sort((a,b)=>order.indexOf(a.estado)-order.indexOf(b.estado));
-  activosList.innerHTML=ac.length?ac.map(a=>{
-    let pct=avancePct(a), cuota=cuotaMensual(a), rec=acumuladoRecuperado(a), saldo=saldoPendienteActivo(a), mr=mesesRestantes(a), mp=mesesPagadosReal(a), sem=activoSemaforo(a), por=acumuladoPorOrigen(a);
-    let barCls=pct>=90?'':pct>=50?'warn':'bad';
-    let costoLabel=a.costoPorConfirmar?'<span style="color:var(--warn);font-size:10px;font-weight:900"> ⚠️ por confirmar</span>':'';
-    let mantLabel=!a.aplicaMant?'<span style="color:var(--muted);font-size:10px">No aplica mant.</span>':a.mantPorConfirmar?'<span style="color:var(--warn);font-size:10px;font-weight:900">🔧 Mant. por confirmar</span>':`<span style="color:var(--ok);font-size:10px">🔧 Mant. ${money(nAct(a.mantAnual))}/año</span>`;
-    let catIcon=a.categoria==='Conservador'?'📦':a.categoria==='Congelador'?'❄️':a.categoria==='Máquina Hielo'?'🧊':a.categoria==='Planta Purificadora'?'💧':a.categoria==='Vehículo'?'🚗':'🔧';
-    let pagos=pagosDeActivo(a).slice().sort((x,y)=>(y.ts||0)-(x.ts||0)).slice(0,4).map(p=>{let b=pagoBreakdown(p);return `<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:4px;margin-top:4px">📅 ${p.fecha||'—'} · ${money(b.total||p.monto)} · ${p.metodo||'—'}${p.comment?' · '+p.comment:''}</div>`}).join('');
-    let bodyContent='';
-    if(!a.costoPorConfirmar&&nAct(a.costo)>0){
-      bodyContent=`<div style="background:#f4fbff;border-radius:12px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:8px">
-        <div><span style="color:var(--muted)">Costo total</span><br><b>${money(a.costo)}</b></div>
-        <div><span style="color:var(--muted)">Cuota mensual</span><br><b>${money(cuota)}</b></div>
-        <div><span style="color:var(--muted)">Recuperado</span><br><b style="color:var(--ok)">${money(rec)}</b></div>
-        <div><span style="color:var(--muted)">Saldo pendiente</span><br><b style="color:var(--bad)">${money(saldo)}</b></div>
-        <div><span style="color:var(--muted)">Meses pagados/plazo</span><br><b>${mp}/${a.plazo}</b></div>
-        <div><span style="color:var(--muted)">Meses restantes</span><br><b>${mr}</b></div>
-        <div><span style="color:var(--muted)">Efectivo/Transf.</span><br><b>${money(por.efectivo+por.transferencia)}</b></div>
-        <div><span style="color:var(--muted)">KLAR conservadores</span><br><b>${money(por.klarConservadores)}</b></div>
-      </div>
-      <div style="margin-top:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><small style="color:var(--muted)">Avance recuperación</small><small style="font-weight:900;color:${sem.color}">${pct}%</small></div><div class="progress" style="height:12px"><div class="bar ${barCls}" style="width:${pct}%"></div></div></div>
-      ${pagos?`<div style="background:#fff;border-radius:12px;padding:8px;margin-top:8px"><b style="font-size:11px;color:var(--azul)">Últimos pagos</b>${pagos}</div>`:''}`;
-    } else if(a.costoPorConfirmar){bodyContent=`<div style="background:#fff8e7;border-radius:12px;padding:10px;font-size:12px;color:var(--warn);font-weight:700">⚠️ Costo pendiente de confirmar.</div>`;}
-    return `<div class="item" style="flex-direction:column;align-items:stretch;gap:8px;background:${sem.bg}"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><b style="font-size:13px;color:var(--azul)">${catIcon} ${a.nombre}</b>${costoLabel}${a.cliente?`<br><small style="color:var(--muted)">📍 ${a.cliente}</small>`:''}${a.fechaCompra?`<br><small style="color:var(--muted)">🗓️ ${a.fechaCompra}</small>`:''}<br>${mantLabel}${a.notas?`<br><small style="color:var(--muted);font-size:11px">📝 ${a.notas}</small>`:''}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span style="background:${sem.color};color:#fff;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap">${sem.label}</span><button class="mini ok" onclick="openAddPagoActivoModal('${a.id}')">Registrar pago</button><button class="mini" onclick="editActivo('${a.id}')">Editar</button><button class="mini bad" onclick="deleteActivo('${a.id}')">Eliminar</button></div></div>${bodyContent}</div>`;
-  }).join(''):`<div class="item"><div><b>Sin activos</b><br><small>Usa ＋ Agregar para crear el primero</small></div></div>`;
-};
-
-openAddPagoActivoModal=function(preselectId){
-  let sel=document.getElementById('pagoActivoSel'); if(!sel) return;
-  sel.innerHTML=(db.activos||[]).filter(a=>['Activo','Stand By','Reinvertido','Liquidado'].includes(a.estado)).map(a=>`<option value="${a.id}">${a.nombre}</option>`).join('');
-  if(!sel.options.length){ toast('⚠️ No hay activos para registrar pagos'); return; }
-  if(preselectId) sel.value=preselectId;
-  pagoFecha.value=today(); pagoMonto.value=0; pagoEfectivo.value=0;
-  if(window.pagoTransferencia) pagoTransferencia.value=0;
-  if(window.pagoKlarSanchez) pagoKlarSanchez.value=0;
-  if(window.pagoKlarConservadores) pagoKlarConservadores.value=0;
-  if(window.pagoKlarMonto) pagoKlarMonto.value=0;
-  pagoComment.value='';
-  document.querySelectorAll('[data-pago-method]').forEach(x=>x.classList.remove('active'));
-  let ef=document.querySelector('[data-pago-method="Efectivo"]'); if(ef) ef.classList.add('active');
-  if(pagoMixtoRow) pagoMixtoRow.style.display='none'; if(pagoMontoRow) pagoMontoRow.style.display='block';
-  modalAddPago.style.display='block';
-};
-
-savePagoActivo=function(){
-  let activoId=pagoActivoSel?.value; if(!activoId) return toast('⚠️ Selecciona un activo');
-  let fecha=pagoFecha.value||today(); let metodo=document.querySelector('[data-pago-method].active')?.getAttribute('data-pago-method')||'Efectivo';
-  let efectivo=0,transferencia=0,klarSanchez=0,klarConservadores=0,monto=0;
-  if(metodo==='Mixto'){
-    efectivo=nAct(pagoEfectivo.value); transferencia=nAct(window.pagoTransferencia?.value); klarSanchez=nAct(window.pagoKlarSanchez?.value); klarConservadores=nAct(window.pagoKlarConservadores?.value); monto=efectivo+transferencia+klarSanchez+klarConservadores;
-  }else{ monto=nAct(pagoMonto.value); if(metodo==='Efectivo') efectivo=monto; if(metodo==='Transferencia') transferencia=monto; if(metodo==='KLAR_SANCHEZ') klarSanchez=monto; if(metodo==='KLAR_CONSERVADORES') klarConservadores=monto; }
-  if(monto<=0) return toast('⚠️ El monto debe ser mayor a 0');
-  db.pagosActivos=Array.isArray(db.pagosActivos)?db.pagosActivos:[];
-  db.pagosActivos.push({id:'PAG'+Date.now(),activoId,fecha,metodo,monto,efectivo,transferencia,klarSanchez,klarConservadores,comment:pagoComment.value.trim(),tipo:'Recuperacion',ts:Date.now()});
-  closePagoActivoModal(); save(); renderActivos(); toast('✅ Pago registrado y KPIs actualizados');
-};
-
-(function patchPagoMethodChoicePro(){setTimeout(function(){document.querySelectorAll('[data-pago-method]').forEach(el=>el.onclick=function(){document.querySelectorAll('[data-pago-method]').forEach(x=>x.classList.remove('active'));el.classList.add('active');let m=el.getAttribute('data-pago-method');if(window.pagoMixtoRow) pagoMixtoRow.style.display=m==='Mixto'?'grid':'none';if(window.pagoMontoRow) pagoMontoRow.style.display=m==='Mixto'?'none':'block';});},800);})();
-
-
-
-/* ═══ PARCHE 2 — AJUSTE SEGÚN EXCEL ACTUALIZADO (NO USAR MESES TEÓRICOS COMO DINERO) ═══ */
-const ACTIVOS_EXCEL_PATCH={
-  ACT001:{mantAnual:800,mantPorConfirmar:false},
-  ACT002:{mantAnual:1600,mantPorConfirmar:false},
-  ACT003:{mantAnual:500,mantPorConfirmar:false},
-  ACT004:{mantAnual:500,mantPorConfirmar:false},
-  ACT005:{mantAnual:500,mantPorConfirmar:false},
-  ACT006:{mantAnual:800,mantPorConfirmar:false},
-  ACT007:{mantAnual:800,mantPorConfirmar:false},
-  ACT008:{mantAnual:800,mantPorConfirmar:false,efectivoGuardado:10538,klarConservadoresInicial:1171},
-  ACT009:{mantAnual:800,mantPorConfirmar:false,efectivoGuardado:2516,klarConservadoresInicial:1258},
-  ACT010:{mantAnual:20000,mantPorConfirmar:false},
-  ACT011:{mantAnual:3500,mantPorConfirmar:false},
-  ACT012:{mantAnual:2000,mantPorConfirmar:false},
-  ACT013:{mantAnual:0,mantPorConfirmar:true},
-  ACT014:{mantAnual:500,mantPorConfirmar:false},
-  ACT015:{mantAnual:800,mantPorConfirmar:false,efectivoGuardado:10539,klarConservadoresInicial:1171},
-  ACT016:{mantAnual:800,mantPorConfirmar:false,efectivoGuardado:10538,klarConservadoresInicial:1171},
-  ACT017:{mantAnual:800,mantPorConfirmar:false,efectivoGuardado:8811,klarConservadoresInicial:2171},
-  ACT019:{aplicaMant:false,mantAnual:0,mantPorConfirmar:false},
-  ACT020:{mantAnual:0,mantPorConfirmar:true}
-};
-function applyExcelActivosPatch(){
-  if(!db || !Array.isArray(db.activos)) return;
-  db.pagosActivos=Array.isArray(db.pagosActivos)?db.pagosActivos:[];
-  /* Borra únicamente la migración automática anterior que inflaba el recuperado a ~140 mil. */
-  db.pagosActivos=db.pagosActivos.filter(p=>!(p.autoInicial || String(p.id||'').startsWith('PAGINI_') || String(p.comment||'').includes('Migración automática por meses ya pagados')));
-  db.activos.forEach(a=>{
-    const x=ACTIVOS_EXCEL_PATCH[a.id]; if(!x) return;
-    Object.keys(x).forEach(k=>{ a[k]=x[k]; });
-    a.mantAnual=nAct(a.mantAnual);
-    if(a.aplicaMant===undefined) a.aplicaMant=true;
-  });
-  Object.entries(ACTIVOS_EXCEL_PATCH).forEach(([id,x])=>{
-    const ef=nAct(x.efectivoGuardado), kc=nAct(x.klarConservadoresInicial);
-    const pid='PAGXLS_'+id;
-    db.pagosActivos=db.pagosActivos.filter(p=>p.id!==pid);
-    if(ef>0 || kc>0){
-      db.pagosActivos.push({
-        id:pid,activoId:id,fecha:'2026-05-19',metodo:'Excel',monto:ef+kc,
-        efectivo:ef,transferencia:0,klarSanchez:0,klarConservadores:kc,
-        comment:'Saldo inicial validado contra Excel: efectivo + KLAR conservadores',
-        tipo:'Recuperacion',excelInicial:true,ts:1779148800000
-      });
-    }
-  });
-}
-seedPagosInicialesActivos=function(){ applyExcelActivosPatch(); };
-/* Ejecutar una vez al cargar para corregir localStorage anterior y evitar totales inflados. */
-try{ applyExcelActivosPatch(); save(); }catch(e){ console.warn('Patch activos Excel no aplicado todavía',e); }
 
 /* ─── Excel sheets ─── */
 function buildActivos(wb){
@@ -2021,7 +1853,7 @@ function buildActivos(wb){
       {v:a.costoPorConfirmar?'Por confirmar':(+a.costo||0),bg,sz:9,fmt:a.costoPorConfirmar?undefined:MFmt,border:true},
       {v:a.costoPorConfirmar?'Por confirmar':cuota,bg,sz:9,fmt:a.costoPorConfirmar?undefined:MFmt,border:true},
       {v:+a.plazo||0,bg,sz:9,align:'center',border:true},
-      {v:+a.mesesPagados||0,bg,sz:9,align:'center',border:true},{v:mr,bg,sz:9,align:'center',border:true},
+      {v:mesesPagadosReales(a),bg,sz:9,align:'center',border:true},{v:mr,bg,sz:9,align:'center',border:true},
       {v:rec,bg,fg:XL.VERDE,sz:9,fmt:MFmt,border:true},
       {v:saldo,bg,fg:saldo>0?XL.ROJO:XL.NEGRO,sz:9,fmt:MFmt,border:true},
       {v:pct+'%',bg,bold:true,sz:9,align:'center',border:true},
@@ -2064,9 +1896,7 @@ function buildPagosActivos(wb){
   if(document.getElementById('compliance')) renderCompliance();
   renderOperationalKPIs();
 });if(window.compDate&&!compDate.value){compDate.value=today();compMonth.value=today().slice(0,7);compYear.value=new Date().getFullYear();toggleCompControls();}salePaid?.addEventListener('input',calcSale);if(document.getElementById('advExportDate')&&!document.getElementById('advExportDate').value){advExportDate.value=today();advExportStart.value=today();advExportEnd.value=today();advExportMonth.value=today().slice(0,7);advExportYear.value=new Date().getFullYear();toggleAdvExportControls();} if(window.mantDetail)updateMantDetail();
-go('inicio');calcSale();render();
-/* IMPORTANTE: no sincronizar automáticamente al abrir para evitar que una versión de nube
-   o plantilla sobrescriba el localStorage existente. Usa "Sincronizar ahora" manualmente. */
+go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),60000);
 /* ═══════════════════ FIXES HIELITOS AHH!! ═══════════════════ */
 
 /* ── PROBLEMA 1: Historial completo (slice → sin límite artificial) ── */

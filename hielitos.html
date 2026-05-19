@@ -195,9 +195,21 @@ async function uploadRemoteDB(){
   if(!r.ok) throw new Error('No se pudo guardar Supabase: '+r.status);
   const rows=await r.json().catch(()=>[]); if(rows && rows[0]?.id) cloudRowId=rows[0].id;
 }
+async function ensureStorageBucket(){
+  /* Crea el bucket fotos-checklist si no existe (público) */
+  try{
+    let r=await fetch(SUPABASE_URL+'/storage/v1/bucket',{
+      method:'POST',
+      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({id:'fotos-checklist',name:'fotos-checklist',public:true})
+    });
+    // 200 = creado, 409 = ya existe — ambos están bien
+  }catch(e){/* silencioso */}
+}
 async function syncNow(silent=false){
   if(isSyncing) return; isSyncing=true; setOnlineStatus('🔄 Sincronizando');
   try{
+    await ensureStorageBucket();
     const remote=await fetchRemoteDB();
     if(remote){ db=normalize(newer(db,remote)); }
     db.__updatedAt=Date.now(); persistLocal(); recalcStock(); render();
@@ -257,25 +269,94 @@ function deleteMant(i){if(confirm('¿Eliminar este mantenimiento/falla? Esta acc
 function k(date,idx){return date+'|'+idx}
 let currentFreq='Diaria';
 function setCheck(idx,done,comment,fileName){let date=checkDate.value||today();let key=k(date,idx);db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,date,idx});save();}
+
+/* ── Comprimir imagen: max 800px, calidad 65% → ~50-80 KB ──────── */
+function compressImage(file,maxPx,quality){
+  return new Promise(resolve=>{
+    let reader=new FileReader();
+    reader.onload=function(e){
+      let img=new Image();
+      img.onload=function(){
+        let w=img.width,h=img.height;
+        if(w>maxPx||h>maxPx){
+          if(w>h){h=Math.round(h*maxPx/w);w=maxPx;}
+          else{w=Math.round(w*maxPx/h);h=maxPx;}
+        }
+        let canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ── Subir foto a Supabase Storage, devuelve URL pública ────────── */
+async function uploadPhotoToSupabase(base64Data,fileName){
+  try{
+    // Convertir base64 → Blob
+    let arr=base64Data.split(','),mime='image/jpeg';
+    let bstr=atob(arr[1]),n=bstr.length,u8=new Uint8Array(n);
+    for(let i=0;i<n;i++) u8[i]=bstr.charCodeAt(i);
+    let blob=new Blob([u8],{type:mime});
+    // Nombre único para evitar colisiones
+    let safeName=Date.now()+'_'+fileName.replace(/[^a-zA-Z0-9._-]/g,'_');
+    let uploadUrl=SUPABASE_URL+'/storage/v1/object/fotos-checklist/'+safeName;
+    let r=await fetch(uploadUrl,{
+      method:'POST',
+      headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':mime,'x-upsert':'true'},
+      body:blob
+    });
+    if(!r.ok) throw new Error('Storage error '+r.status);
+    // URL pública
+    return SUPABASE_URL+'/storage/v1/object/public/fotos-checklist/'+safeName;
+  }catch(err){
+    console.warn('Supabase Storage no disponible, usando base64 local:',err.message);
+    return null; // fallback a base64
+  }
+}
+
+/* ── Función central de guardado de foto (comprime + sube) ──────── */
+async function processAndSavePhoto(file,onProgress){
+  onProgress('⏳ Comprimiendo foto...');
+  let compressed=await compressImage(file,800,0.65);
+  onProgress('☁️ Subiendo a Supabase...');
+  let url=await uploadPhotoToSupabase(compressed,file.name);
+  if(url){
+    onProgress('✅ Foto guardada en Supabase');
+    return {fileUrl:url,fileName:file.name,fileData:null}; // no guarda base64 en DB
+  } else {
+    onProgress('✅ Foto guardada (local)');
+    return {fileUrl:null,fileName:file.name,fileData:compressed}; // fallback
+  }
+}
+
+function showPreview(previewEl,url,base64,fileName){
+  if(!previewEl) return;
+  let src=url||base64||'';
+  if(!src){previewEl.innerHTML='';return;}
+  previewEl.innerHTML=`<img src="${src}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${src}" download="${fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>`;
+}
+
 function setCheckWithPhoto(idx,done,comment,fileInput){
   let date=checkDate.value||today();let key=k(date,idx);
   if(fileInput&&fileInput.files&&fileInput.files[0]){
     let file=fileInput.files[0];
-    let reader=new FileReader();
-    reader.onload=function(e){
-      db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName:file.name,fileData:e.target.result,date,idx});
+    let preview=document.getElementById('prev'+idx);
+    processAndSavePhoto(file,msg=>{if(preview)preview.innerHTML=`<small style="color:var(--muted)">${msg}</small>`;})
+    .then(({fileUrl,fileName,fileData})=>{
+      db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,fileUrl:fileUrl||'',fileData:fileData||'',date,idx});
       save();
-      /* Refresh photo preview */
-      let preview=document.getElementById('prev'+idx);
-      if(preview){preview.innerHTML=`<img src="${e.target.result}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${e.target.result}" download="${file.name}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>`;}
-    };
-    reader.readAsDataURL(file);
+      showPreview(preview,fileUrl,fileData,fileName);
+    });
   } else {
     db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,date,idx});
     save();
   }
 }
-function renderTasks(){freqFilters.innerHTML=['Diaria','Semanal','Mensual','Bimestral','Trimestral','Semestral','Anual'].map(f=>`<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';renderTasks()">${f}</button>`).join('');let date=checkDate.value||today();taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{let c=db.checks[k(date,i)]||{};let photoHtml=c.fileData?`<div id="prev${i}"><img src="${c.fileData}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${c.fileData}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} (foto no guardada — seleccionar de nuevo)</span>`:''}</div>`;return `<div class="task ${c.done?'done':''}"><div class="tasktop"><input type="checkbox" ${c.done?'checked':''} onchange="setCheck(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')"><div><div class="act">${t.icon} ${t.actividad}</div><div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div></div></div><textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheck(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea><label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheckWithPhoto(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this)"></label>${photoHtml}</div>`}).join('')}
+function renderTasks(){freqFilters.innerHTML=['Diaria','Semanal','Mensual','Bimestral','Trimestral','Semestral','Anual'].map(f=>`<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';renderTasks()">${f}</button>`).join('');let date=checkDate.value||today();taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{let c=db.checks[k(date,i)]||{};let photoSrc=c.fileUrl||c.fileData||'';let photoHtml=photoSrc?`<div id="prev${i}"><img src="${photoSrc}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${photoSrc}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} (seleccionar de nuevo para guardar)</span>`:''}</div>`;return `<div class="task ${c.done?'done':''}"><div class="tasktop"><input type="checkbox" ${c.done?'checked':''} onchange="setCheck(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')"><div><div class="act">${t.icon} ${t.actividad}</div><div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div></div></div><textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheck(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea><label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheckWithPhoto(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this)"></label>${photoHtml}</div>`}).join('')}
 function toggleCompControls(){/* Periodicidad fija: Diario/Semanal/Mensual/Trimestral/Semestral/Anual */}
 function compDateInPeriod(date){
   /* Filtra checks por la fecha seleccionada en el checklist */
@@ -1568,7 +1649,8 @@ window.syncFreqToCheckPeriod=function(){
       .filter(([t])=>t.freq===currentFreq && respMatches(t.resp,taskResp))
       .map(([t,i])=>{
       let c=db.checks[periodKey+'|'+i]||{};
-      let photoHtml=c.fileData?`<div id="prev${i}"><img src="${c.fileData}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${c.fileData}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} (foto no guardada — seleccionar de nuevo)</span>`:''}</div>`;
+      let photoSrc=c.fileUrl||c.fileData||'';
+      let photoHtml=photoSrc?`<div id="prev${i}"><img src="${photoSrc}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${photoSrc}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} (seleccionar de nuevo para guardar)</span>`:''}</div>`;
       return `<div class="task ${c.done?'done':''}">
         <div class="tasktop">
         <input type="checkbox" ${c.done?'checked':''} onchange="setCheckPeriod(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')">
@@ -1598,15 +1680,14 @@ window.setCheckPeriodWithPhoto=function(idx,done,comment,fileInput){
   let key=periodKey+'|'+idx;
   if(fileInput&&fileInput.files&&fileInput.files[0]){
     let file=fileInput.files[0];
-    let reader=new FileReader();
-    reader.onload=function(e){
-      db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName:file.name,fileData:e.target.result,date:periodKey,idx,freq:currentFreq,ts:Date.now()});
+    let preview=document.getElementById('prev'+idx);
+    processAndSavePhoto(file,msg=>{if(preview)preview.innerHTML=`<small style="color:var(--muted)">${msg}</small>`;})
+    .then(({fileUrl,fileName,fileData})=>{
+      db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,fileUrl:fileUrl||'',fileData:fileData||'',date:periodKey,idx,freq:currentFreq,ts:Date.now()});
       save();
       if(document.getElementById('compliance')) renderCompliance();
-      let preview=document.getElementById('prev'+idx);
-      if(preview){preview.innerHTML=`<img src="${e.target.result}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${e.target.result}" download="${file.name}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>`;}
-    };
-    reader.readAsDataURL(file);
+      showPreview(preview,fileUrl,fileData,fileName);
+    });
   } else {
     db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,date:periodKey,idx,freq:currentFreq,ts:Date.now()});
     save();

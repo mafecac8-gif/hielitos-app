@@ -201,141 +201,81 @@
 
 
 <section id="activos" class="screen">
-<!-- KPIs -->
-<div class="card"><h2>📊 Resumen — Control de Activos</h2><div class="body">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-<div class="kpi" style="border-top-color:var(--azul)">📦 <span>Total activos</span><b id="akTotal">0</b></div>
-<div class="kpi" style="border-top-color:var(--ok)">✅ <span>Activos</span><b id="akEnCurso">0</b></div>
-<div class="kpi" style="border-top-color:#8b5cf6">🔵 <span>Reinvertidos</span><b id="akReinvertidos">0</b></div>
-<div class="kpi" style="border-top-color:var(--warn)">⏸️ <span>Stand By</span><b id="akStandBy">0</b></div>
-</div>
-<div style="border-left:4px solid var(--bad);padding:10px 14px;background:#fff0f0;border-radius:0 14px 14px 0;margin-bottom:10px">
-<div style="font-size:10px;font-weight:900;color:var(--bad);text-transform:uppercase;margin-bottom:6px">💰 Recuperación de inversión</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-<div class="kpi">💳 <span>Pago mensual requerido</span><b id="akPagoMensual">$0</b></div>
-<div class="kpi">⏳ <span>Saldo pendiente total</span><b id="akSaldoPend">$0</b></div>
-<div class="kpi" style="border-top-color:var(--ok)">✅ <span>Recuperado acumulado</span><b id="akFondoRecup">$0</b></div>
-<div class="kpi" style="border-top-color:var(--warn)">⚠️ <span>Atrasados</span><b id="akAtrasados">0</b></div>
+<div class="card"><h2>📊 KPIs — Control de Activos</h2><div class="body grid kpis" id="activosKpis">
+<div class="kpi">📦 <span>Total activos</span><b id="akTotal">0</b></div>
+<div class="kpi ok">✅ <span>Activos liquidados</span><b id="akLiquidados">0</b></div>
+<div class="kpi warn">⚙️ <span>Activos en curso</span><b id="akEnCurso">0</b></div>
+<div class="kpi bad">⚠️ <span>Activos atrasados</span><b id="akAtrasados">0</b></div>
+<div class="kpi">💰 <span>Pago mensual requerido</span><b id="akPagoMensual">$0</b></div>
+<div class="kpi ok">🏦 <span>Fondo recuperación acum.</span><b id="akFondoRecup">$0</b></div>
+<div class="kpi warn">🔧 <span>Fondo mantenimiento acum.</span><b id="akFondoMant">$0</b></div>
+<div class="kpi bad">⏳ <span>Saldo pendiente total</span><b id="akSaldoPend">$0</b></div>
 </div></div>
-<div style="border-left:4px solid var(--ok);padding:10px 14px;background:#f0fff9;border-radius:0 14px 14px 0">
-<div style="font-size:10px;font-weight:900;color:var(--ok);text-transform:uppercase;margin-bottom:6px">🔧 Fondo mantenimiento</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-<div class="kpi">🔧 <span>Mant. anual total estimado</span><b id="akMantAnualTotal">$0</b></div>
-<div class="kpi">📆 <span>Ahorro mensual sugerido</span><b id="akMantMensual">$0</b></div>
-</div></div>
-</div></div>
-
 <br>
-
-<!-- TABS internos del módulo -->
-<div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto">
-<button id="tabActAct" class="btn" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('activos')">📦 Activos</button>
-<button id="tabActPag" class="btn alt" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('pagos')">💳 Recuperación de Inversión</button>
-<button id="tabActMant" class="btn alt" style="white-space:nowrap;font-size:13px" onclick="switchActivosTab('mant')">🔧 Fondo Mantenimiento</button>
-</div>
-
-<!-- PANEL: Lista de activos -->
-<div id="panelActivos">
-<div class="card"><h2>📦 Activos Registrados <button class="mini ok" onclick="openAddActivoModal()">＋ Agregar</button></h2>
+<div class="card"><h2>🏭 Activos Registrados <button class="mini ok" onclick="openAddActivoModal()">＋ Agregar Activo</button></h2>
 <div class="body">
 <div class="filters" id="activosFilters"></div>
 <div class="list" id="activosList"></div>
 </div></div>
-</div>
+<br>
+<div class="card"><h2>💳 Pagos a Activos <button class="mini" onclick="openAddPagoActivoModal()">＋ Registrar Pago</button></h2>
+<div class="body"><div class="list" id="pagosList"></div></div></div>
+<br>
+<div class="card"><h2>🔧 Fondos de Mantenimiento</h2>
+<div class="body"><div class="list" id="fondosMantList"></div></div></div>
 
-<!-- PANEL: Recuperación de inversión (pagos) -->
-<div id="panelPagos" style="display:none">
-<div class="card"><h2>💳 Recuperación de Inversión <button class="mini ok" onclick="openAddPagoActivoModal()">＋ Registrar Pago</button></h2>
-<div class="body">
-<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Registra aquí los pagos que vas recibiendo de clientes o abonos propios para recuperar el costo de los activos.</p>
-<div class="list" id="pagosList"></div>
-</div></div>
-</div>
-
-<!-- PANEL: Fondo Mantenimiento -->
-<div id="panelMant" style="display:none">
-<div class="card"><h2>🔧 Fondo de Mantenimiento</h2>
-<div class="body">
-<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Solo aplica a equipos marcados con mantenimiento. Los montos <b style="color:var(--warn)">por confirmar</b> son editables — toca el activo para actualizarlos.</p>
-<div class="list" id="fondosMantList"></div>
-</div></div>
-</div>
-
-<!-- MODAL AGREGAR / EDITAR ACTIVO -->
-<div id="modalAddActivo" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:50;overflow-y:auto;padding:16px 0">
-<div style="background:#fff;margin:0 auto;max-width:480px;border-radius:22px;padding:22px;box-shadow:0 20px 48px rgba(0,56,130,.25)">
-<h2 style="margin:0 0 16px;color:var(--azul)">🏭 Activo</h2>
+<!-- MODAL AGREGAR ACTIVO -->
+<div id="modalAddActivo" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:50;overflow-y:auto">
+<div style="background:#fff;margin:20px auto;max-width:480px;border-radius:22px;padding:22px;box-shadow:0 20px 48px rgba(0,56,130,.2)">
+<h2 style="margin:0 0 16px">🏭 Agregar / Editar Activo</h2>
 <div class="field"><label>Nombre del Activo</label><input id="acNombre" placeholder="Ej: Conservador FrioCima SS1"></div>
-<div class="row">
 <div class="field"><label>Categoría</label>
-<select id="acCategoria"><option>Conservador</option><option>Congelador</option><option>Máquina Hielo</option><option>Planta Purificadora</option><option>Equipo</option><option>Vehículo</option><option>Herramienta</option><option>Otro</option></select></div>
+<select id="acCategoria"><option>Conservador</option><option>Congelador</option><option>Máquina Hielo</option><option>Planta Purificadora</option><option>Vehículo</option><option>Herramienta</option><option>Equipo</option><option>Otro</option></select></div>
+<div class="row">
+<div class="field"><label>Cliente/Ubicación (opcional)</label><input id="acCliente" placeholder="Ej: SS1 Alejo Torres"></div>
 <div class="field"><label>Estado</label>
-<select id="acEstado"><option>Activo</option><option>Stand By</option><option>Reinvertido</option><option>Liquidado</option><option>Fuera de uso</option></select></div>
+<select id="acEstado"><option>Activo</option><option>Liquidado</option><option>Reinvertido</option><option>Stand By</option><option>Fuera de uso</option></select></div>
 </div>
-<div class="field"><label>Cliente / Ubicación (opcional)</label><input id="acCliente" placeholder="Ej: SS1 Alejo Torres"></div>
 <div class="row">
 <div class="field"><label>Fecha compra</label><input id="acFechaCompra" type="date"></div>
-<div class="field"><label>Costo total ($) <span id="acCostoPCLabel" style="color:var(--warn);font-size:10px"></span></label>
-<div style="display:flex;gap:6px;align-items:center">
-<input id="acCosto" type="number" value="0" style="flex:1">
-<label style="display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--warn)">
-<input type="checkbox" id="acCostoPC"> Por confirmar</label>
-</div></div>
+<div class="field"><label>Costo total ($)</label><input id="acCosto" type="number" value="0"></div>
 </div>
 <div class="row">
 <div class="field"><label>Plazo recuperación (meses)</label><input id="acPlazo" type="number" value="18"></div>
+<div class="field"><label>Mantenimiento anual estimado ($)</label><input id="acMantAnual" type="number" value="0"></div>
+</div>
 <div class="field"><label>Meses ya pagados</label><input id="acMesesPagados" type="number" value="0"></div>
-</div>
-<div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;background:#f4fbff">
-<div style="font-size:11px;font-weight:900;color:var(--azul);margin-bottom:8px">🔧 Mantenimiento</div>
-<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;font-weight:700">
-<input type="checkbox" id="acAplicaMant" onchange="toggleMantFields()"> Aplica mantenimiento a este activo
-</label>
-<div id="acMantFields" style="display:none">
-<div class="row">
-<div class="field"><label>Monto anual estimado ($)</label>
-<div style="display:flex;gap:6px;align-items:center">
-<input id="acMantAnual" type="number" value="0" style="flex:1">
-<label style="display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--warn)">
-<input type="checkbox" id="acMantPC"> Por confirmar</label>
-</div></div>
-</div>
-</div>
-</div>
-<div class="field"><label>Reinvertido en (si aplica)</label><input id="acReinvertidoEn" placeholder="Ej: FrioCima SS1-SS4"></div>
-<div class="field"><label>Notas (serie, modelo, capacidad, etc.)</label><textarea id="acNotas" placeholder="Serie, modelo, capacidad..."></textarea></div>
+<div class="field"><label>Activo reinvertido en (opcional)</label><input id="acReinvertidoEn" placeholder="Ej: Congelador SS4"></div>
 <div style="display:flex;gap:10px;margin-top:16px">
 <button class="btn ok" onclick="saveActivo()">💾 Guardar</button>
 <button class="btn" style="background:#e9f5ff;color:var(--azul)" onclick="closeAddActivoModal()">Cancelar</button>
 </div>
 </div></div>
 
-<!-- MODAL PAGO / RECUPERACIÓN -->
-<div id="modalAddPago" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:50;overflow-y:auto;padding:16px 0">
-<div style="background:#fff;margin:0 auto;max-width:480px;border-radius:22px;padding:22px;box-shadow:0 20px 48px rgba(0,56,130,.25)">
-<h2 style="margin:0 0 16px;color:var(--azul)">💳 Registrar Recuperación de Inversión</h2>
+<!-- MODAL AGREGAR PAGO A ACTIVO -->
+<div id="modalAddPago" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:50;overflow-y:auto">
+<div style="background:#fff;margin:20px auto;max-width:480px;border-radius:22px;padding:22px;box-shadow:0 20px 48px rgba(0,56,130,.2)">
+<h2 style="margin:0 0 16px">💳 Registrar Pago de Activo</h2>
 <div class="field"><label>Activo</label><select id="pagoActivoSel"></select></div>
 <div class="field"><label>Fecha pago</label><input id="pagoFecha" type="date"></div>
-<div class="field"><label>Método de pago</label>
+<div class="field"><label>Método</label>
 <div class="seg three">
 <div class="choice active" data-pago-method="Efectivo">💵 Efectivo</div>
 <div class="choice" data-pago-method="KLAR">🏦 KLAR</div>
 <div class="choice" data-pago-method="Mixto">🔀 Mixto</div>
 </div></div>
 <div class="row" id="pagoMixtoRow" style="display:none">
-<div class="field"><label>Monto efectivo ($)</label><input id="pagoEfectivo" type="number" value="0"></div>
-<div class="field"><label>Monto KLAR ($)</label><input id="pagoKlarMonto" type="number" value="0"></div>
+<div class="field"><label>Monto efectivo</label><input id="pagoEfectivo" type="number" value="0"></div>
+<div class="field"><label>Monto KLAR</label><input id="pagoKlarMonto" type="number" value="0"></div>
 </div>
 <div class="field" id="pagoMontoRow"><label>Monto total ($)</label><input id="pagoMonto" type="number" value="0"></div>
-<div class="field"><label>Comentario</label><input id="pagoComment" placeholder="Ej: Pago mensual mayo"></div>
+<div class="field"><label>Comentario</label><input id="pagoComment" placeholder="Comentario opcional"></div>
 <div style="display:flex;gap:10px;margin-top:16px">
-<button class="btn ok" onclick="savePagoActivo()">💾 Guardar</button>
+<button class="btn ok" onclick="savePagoActivo()">💾 Guardar Pago</button>
 <button class="btn" style="background:#e9f5ff;color:var(--azul)" onclick="closePagoActivoModal()">Cancelar</button>
 </div>
 </div></div>
-
 </section>
-
 <section id="clientes" class="screen"><div class="card"><h2>👥 Historial de clientes</h2><div class="body"><div class="field"><label>Buscar cliente</label><input id="clientSearch" placeholder="Buscar por nombre..." oninput="renderClients()"></div><div class="body grid kpis" style="padding:0 0 12px 0"><div class="kpi">👥 <span>Clientes únicos</span><b id="clTotal">0</b></div><div class="kpi">🧊 <span>Bolsas históricas</span><b id="clBags">0</b></div><div class="kpi">✅ <span>Pagado histórico</span><b id="clPaid">$0</b></div><div class="kpi">⚠️ <span>Debe histórico</span><b id="clDebt">$0</b></div></div><div class="list" id="clientList"></div></div></div></section>
 <section id="datos" class="screen"><div class="card"><h2>🗂 Datos</h2><div class="body grid"><button class="btn alt" onclick="backupJSON()">💾 Descargar respaldo JSON</button><button class="btn ok" onclick="syncNow()">↻ Sincronizar ahora</button></div></div><br><div class="card"><h2>📤 Exportación avanzada para Excel</h2><div class="body grid"><div class="field"><label>Periodo a descargar</label><select id="advExportMode" onchange="toggleAdvExportControls()"><option value="all">Todo el histórico</option><option value="day">Día específico</option><option value="range">Rango de fechas</option><option value="month">Mes</option><option value="year">Año</option></select></div><div class="rangebox"><div class="field adv-exp adv-day" style="display:none"><label>Día</label><input type="date" id="advExportDate"></div><div class="field adv-exp adv-start" style="display:none"><label>Desde</label><input type="date" id="advExportStart"></div><div class="field adv-exp adv-end" style="display:none"><label>Hasta</label><input type="date" id="advExportEnd"></div><div class="field adv-exp adv-month" style="display:none"><label>Mes</label><input type="month" id="advExportMonth"></div><div class="field adv-exp adv-year" style="display:none"><label>Año</label><input type="number" id="advExportYear" min="2024" max="2100"></div></div><button class="btn ok" onclick="downloadAdvancedExcel()">📘 Descargar Excel Master</button><button class="btn" onclick="downloadAdvancedCSV('todo')">📊 Descargar TODO en CSV</button><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><button class="btn alt" onclick="downloadAdvancedCSV('ventas')">🚚 Ventas</button><button class="btn alt" onclick="downloadAdvancedCSV('gastos')">💸 Gastos</button><button class="btn alt" onclick="downloadAdvancedCSV('stock')">🧊 Stock</button><button class="btn alt" onclick="downloadAdvancedCSV('mantenimiento')">🔧 Mant.</button><button class="btn alt" onclick="downloadAdvancedCSV('checklist')">✅ Checklist</button><button class="btn alt" onclick="downloadAdvancedCSV('deudas')">⚠️ Deudas</button></div><small style="color:var(--muted)">El archivo Excel incluye Dashboard CEO, Estado de Resultados, Klar, ventas, gastos, stock, mantenimiento, checklist y deudas por pestañas según el periodo seleccionado.</small></div></div><br><div class="card"><h2>📚 Base de datos local</h2><div class="body list" id="allData"></div></div></section>
 </main><nav class="nav" style="grid-template-columns:repeat(9,1fr)"><button onclick="go('inicio')" id="tab-inicio"><b>🏠</b>Inicio</button><button onclick="go('stock')" id="tab-stock"><b>🧊</b>Stock</button><button onclick="go('ventas')" id="tab-ventas"><b>🚚</b>Ventas</button><button onclick="go('gastos')" id="tab-gastos"><b>💸</b>Gastos</button><button onclick="go('mant')" id="tab-mant"><b>🔧</b>Mant.</button><button onclick="go('check')" id="tab-check"><b>✅</b>Check</button><button onclick="go('activos')" id="tab-activos"><b>🏭</b>Activos</button><button onclick="go('clientes')" id="tab-clientes"><b>👥</b>Clientes</button><button onclick="go('datos')" id="tab-datos"><b>🗂</b>Datos</button></nav><div class="toast" id="toast"></div>
@@ -352,149 +292,27 @@ function isSuperSanchezClient(client){let c=normalizeText(client);return /super\
 function klarIncomeFromSales(list){return (list||[]).filter(s=>isSuperSanchezClient(s.client)).reduce((a,s)=>a+(+s.paid||0),0)}
 function klarExpenseFromExpenses(list){return (list||[]).filter(e=>String(e.method||'')==='Apartado Klar').reduce((a,e)=>a+(+e.amount||0),0)}
 const blank={stock:{Cubo:0,Cilindro:0},movements:[],sales:[],expenses:[],maintenance:[],checks:{},activos:[],pagosActivos:[],__updatedAt:0};
-/* ═══ PARCHE CONSERVADOR 2026-05-19: no borrar storage + importes reales Excel ═══ */
-const EXCEL_ACTIVOS_PATCH={
-  ACT001:{mantAnual:800}, ACT002:{mantAnual:1600}, ACT003:{mantAnual:500}, ACT004:{mantAnual:500}, ACT005:{mantAnual:500},
-  ACT006:{mantAnual:800}, ACT007:{mantAnual:800}, ACT010:{mantAnual:20000}, ACT011:{mantAnual:3500}, ACT012:{mantAnual:2000},
-  ACT014:{mantAnual:500},
-  ACT015:{mantAnual:800,efectivoGuardado:10539,klarConservadores:1171},
-  ACT016:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
-  ACT017:{mantAnual:800,efectivoGuardado:8811,klarConservadores:2171},
-  ACT008:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
-  ACT009:{mantAnual:800,efectivoGuardado:2516,klarConservadores:1258}
-};
-function n2(v){let n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0;}
-function applyExcelActivosPatch(d){
-  if(!d||!Array.isArray(d.activos)) return d;
-  d.activos.forEach(a=>{
-    const p=EXCEL_ACTIVOS_PATCH[a.id]; if(!p) return;
-    Object.assign(a,p);
-    if(p.mantAnual!==undefined){a.aplicaMant=true;a.mantPorConfirmar=false;}
-    a.efectivoGuardado=n2(a.efectivoGuardado);
-    a.klarConservadores=n2(a.klarConservadores);
-    a.transferenciaGuardada=n2(a.transferenciaGuardada);
-  });
-  return d;
-}
-function fondoDisponibleActivo(a){return n2(a.efectivoGuardado)+n2(a.transferenciaGuardada)+n2(a.klarConservadores);}
-function hasFondoExcel(a){return fondoDisponibleActivo(a)>0;}
-function safeParseJSON(s){try{return JSON.parse(s)}catch(e){return null}}
-function looksLikeHielitosDB(x){return x&&typeof x==='object'&&(Array.isArray(x.sales)||Array.isArray(x.expenses)||Array.isArray(x.movements)||Array.isArray(x.maintenance)||Array.isArray(x.activos)||Array.isArray(x.pagosActivos)||x.stock||x.checks)}
-function loadBestLocalDB(){
-  const candidates=[];
-  [KEY,OLDKEY,'hielitosData','hielitos_ahh_db','hielitos_ahh_db_v1'].forEach(k=>{let raw=localStorage.getItem(k);let obj=safeParseJSON(raw);if(looksLikeHielitosDB(obj))candidates.push({k,obj});});
-  for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i); if(!k||candidates.some(c=>c.k===k)) continue; let obj=safeParseJSON(localStorage.getItem(k)); if(looksLikeHielitosDB(obj)) candidates.push({k,obj});}
-  if(!candidates.length) return cloneBlank();
-  candidates.sort((a,b)=>recordCount(b.obj)-recordCount(a.obj)||((+b.obj.__updatedAt||0)-(+a.obj.__updatedAt||0)));
-  let best=normalize(candidates[0].obj);
-  try{localStorage.setItem(KEY+'_backup_before_patch_'+Date.now(),JSON.stringify(best));}catch(e){}
-  return best;
-}
-
 /* ═══ ACTIVOS MAESTROS PRE-CARGADOS (de Lista_Equipos_Hielitos_AHH) ═══ */
 const ACTIVOS_MASTER=[
-  /* ─── ACTIVOS (en curso de recuperación — aún se deben) ─── */
-  {id:'ACT014',nombre:'Congelador Torrey CHTC-145 (Local)',categoria:'Congelador',cliente:'Local',
-   fechaCompra:'2023-09-19',costo:16869,plazo:18,mesesPagados:8,
-   estado:'Activo',aplicaMant:true,mantAnual:500,
-   notas:'27 bolsas / 8 meses pagados, faltan 10 / Serie 0535606496'},
-
-  {id:'ACT015',nombre:'Conservador FrioCima SS1 (Alejo Torres)',categoria:'Conservador',cliente:'SS1 Alejo Torres',
-   fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10539,klarConservadores:1171,
-   notas:'FCC-40-2 / E25/14545 / 40 bolsas / 10 pagados, faltan 8'},
-
-  {id:'ACT016',nombre:'Conservador FrioCima SS2 (Mercado)',categoria:'Conservador',cliente:'SS2 Mercado',
-   fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadores:1171,
-   notas:'FCC-40-2 / E25/14561 / 40 bolsas / 10 pagados, faltan 8'},
-
-  {id:'ACT008',nombre:'Conservador FrioCima SS3 (Centro Salud)',categoria:'Conservador',cliente:'SS3 Centro Salud',
-   fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:10538,klarConservadores:1171,
-   notas:'FCC-40-2 / D24/14508 / 40 bolsas / 10 pagados, faltan 8'},
-
-  {id:'ACT017',nombre:'Conservador FrioCima SS4 (Alejo Torres)',categoria:'Conservador',cliente:'SS4 Alejo Torres',
-   fechaCompra:'2025-03-25',costo:21066,plazo:18,mesesPagados:10,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:8811,klarConservadores:2171,
-   notas:'FCC-40-2 / E25/14554 / 40 bolsas / 10 pagados, faltan 8'},
-
-  {id:'ACT009',nombre:'Conservador FrioCima SS10 (Jalpa)',categoria:'Conservador',cliente:'SS10 Jalpa',
-   fechaCompra:'2025-08-01',costo:22642.82,plazo:18,mesesPagados:3,
-   estado:'Activo',aplicaMant:true,mantAnual:800,efectivoGuardado:2516,klarConservadores:1258,
-   notas:'FCC-40-2 / G25/15414 / 40 bolsas / 3 pagados, faltan 15'},
-
-  {id:'ACT020',nombre:'Auto BYD Dolphin',categoria:'Vehículo',cliente:'',
-   fechaCompra:'2024-01-01',costo:207900,plazo:36,mesesPagados:6,
-   estado:'Activo',aplicaMant:true,mantAnual:0,mantPorConfirmar:true,
-   notas:'6 meses pagados, faltan 30 / Monto mantenimiento por confirmar'},
-
-  /* ─── STAND BY (se debe, aún sin pagos registrados) ─── */
-  {id:'ACT001',nombre:'Conservador Glacial 160b (Alejo Torres)',categoria:'Conservador',cliente:'Alejo Torres',
-   fechaCompra:'2024-01-02',costo:0,costoPorConfirmar:true,plazo:18,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:800,
-   notas:'GELO160CWHCS / Serie 1232/251-Z / 160 bolsas / Costo por confirmar'},
-
-  {id:'ACT002',nombre:'Conservador KALTEK 300b (Alejo Torres)',categoria:'Conservador',cliente:'Alejo Torres',
-   fechaCompra:'2024-11-22',costo:0,costoPorConfirmar:true,plazo:18,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:1600,
-   notas:'KALTEK 300 / Serie 26371 / 300 bolsas / Costo por confirmar'},
-
-  {id:'ACT010',nombre:'Máquina Cilindro ICEMA 1T',categoria:'Máquina Hielo',cliente:'Alejo Torres 142 Int.',
-   fechaCompra:'2024-06-28',costo:0,costoPorConfirmar:true,plazo:60,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:20000,
-   notas:'1T Tube Ice Machine ICEMA / Recibida Dic 2024 / Costo por confirmar'},
-
-  {id:'ACT011',nombre:'Mini Planta Purificadora Ósmosis 100',categoria:'Planta Purificadora',cliente:'Alejo Torres 142 Int.',
-   fechaCompra:'2025-01-10',costo:0,costoPorConfirmar:true,plazo:36,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:3500,
-   notas:'Ósmosis 100 / 2000 lts / Costo por confirmar'},
-
-  {id:'ACT012',nombre:'Purikor Equipo Tratamiento Agua',categoria:'Equipo',cliente:'Local',
-   fechaCompra:'2025-03-03',costo:0,costoPorConfirmar:true,plazo:24,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:2000,
-   notas:'PKRO100-6UVPM / Costo por confirmar'},
-
-  {id:'ACT013',nombre:'Máquina Torrey (Local)',categoria:'Máquina Hielo',cliente:'Local',
-   fechaCompra:'2023-09-28',costo:0,costoPorConfirmar:true,plazo:24,mesesPagados:0,
-   estado:'Stand By',aplicaMant:true,mantAnual:0,mantPorConfirmar:true,
-   notas:'Garantía vencida Sep 2024 / Costo y mantenimiento por confirmar'},
-
-  {id:'ACT019',nombre:'Dino Termo Thor 800 Azul 60b',categoria:'Equipo',cliente:'Aleatorio',
-   fechaCompra:'2024-04-26',costo:0,costoPorConfirmar:true,plazo:12,mesesPagados:0,
-   estado:'Stand By',aplicaMant:false,mantAnual:0,
-   notas:'THERMO THOR 800 / 60 bolsas / No aplica mantenimiento / Costo por confirmar'},
-
-  /* ─── REINVERTIDOS (liquidados + dinero reinvertido en otro equipo) ─── */
-  {id:'ACT003',nombre:'Congelador Danby Horizontal 10 (Sr. Andrade)',categoria:'Congelador',cliente:'Sr. Andrade',
-   fechaCompra:'2024-02-03',costo:5932,plazo:12,mesesPagados:12,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:500,
-   reinvertidoEn:'FrioCima SS1–SS4',
-   notas:'DCF100A5XWDB / Serie 4323103365103 / 20 bolsas / Liquidado y reinvertido en FrioCima'},
-
-  {id:'ACT004',nombre:'Congelador Danby Horizontal 10 (Panadería El Buen Sabor)',categoria:'Congelador',cliente:'Panadería El Buen Sabor',
-   fechaCompra:'2024-02-15',costo:5932,plazo:12,mesesPagados:12,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:500,
-   reinvertidoEn:'FrioCima SS1–SS4',
-   notas:'DCF100A5XWDB / Serie 4323206335365 / 20 bolsas / Liquidado y reinvertido en FrioCima'},
-
-  {id:'ACT005',nombre:'Congelador Danby Horizontal 10 (El Ñero)',categoria:'Congelador',cliente:'El Ñero',
-   fechaCompra:'2024-03-16',costo:6998.94,plazo:12,mesesPagados:12,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:500,
-   reinvertidoEn:'FrioCima SS1–SS4',
-   notas:'DCF100A5XWDB / Serie 4323123372282 / 20 bolsas / Liquidado y reinvertido en FrioCima'},
-
-  {id:'ACT006',nombre:'Conservador Glacial 40b (Local)',categoria:'Conservador',cliente:'Local',
-   fechaCompra:'2024-02-09',costo:14945,plazo:18,mesesPagados:18,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:800,
-   reinvertidoEn:'FrioCima SS1–SS4',
-   notas:'GELO125CWHCS / Serie 22H60104-Z / 40 bolsas / Liquidado y reinvertido en FrioCima'},
-
-  {id:'ACT007',nombre:'Conservador Glacial 40b (SS Ayapa)',categoria:'Conservador',cliente:'SS Ayapa',
-   fechaCompra:'2024-02-20',costo:14097,plazo:18,mesesPagados:18,
-   estado:'Reinvertido',aplicaMant:true,mantAnual:800,
-   reinvertidoEn:'FrioCima SS1–SS4',
-   notas:'GELO125CWHCS / Serie 22450186-Z / 40 bolsas / Liquidado y reinvertido en FrioCima'},
+  {id:'ACT001',nombre:'Conservador Glacial (Alejo Torres)',categoria:'Conservador',cliente:'Alejo Torres',fechaCompra:'2024-01-02',costo:0,plazo:18,mantAnual:850,mesesPagados:0,estado:'Activo',notas:'GELO160CWHCS / Serie 1232/251-Z / 160 bolsas'},
+  {id:'ACT002',nombre:'Conservador KALTEK (Alejo Torres)',categoria:'Conservador',cliente:'Alejo Torres',fechaCompra:'2024-11-22',costo:0,plazo:18,mantAnual:850,mesesPagados:0,estado:'Activo',notas:'KALTEK 300 / Serie 26371 / 300 bolsas'},
+  {id:'ACT003',nombre:'Congelador Danby 10 (Sr. Andrade)',categoria:'Congelador',cliente:'Sr. Andrade',fechaCompra:'2024-02-03',costo:5932,plazo:12,mantAnual:600,mesesPagados:12,estado:'Liquidado',notas:'DCF100A5XWDB / 20 bolsas',reinvertidoEn:''},
+  {id:'ACT004',nombre:'Congelador Danby 10 (Panadería El Buen Sabor)',categoria:'Congelador',cliente:'Panadería El Buen Sabor',fechaCompra:'2024-02-15',costo:5932,plazo:12,mantAnual:600,mesesPagados:12,estado:'Liquidado',notas:'DCF100A5XWDB / 20 bolsas',reinvertidoEn:''},
+  {id:'ACT005',nombre:'Congelador Danby 10 (El Ñero)',categoria:'Congelador',cliente:'El Ñero',fechaCompra:'2024-03-01',costo:6998.94,plazo:12,mantAnual:600,mesesPagados:12,estado:'Liquidado',notas:'20 bolsas',reinvertidoEn:''},
+  {id:'ACT006',nombre:'Conservador Glacial 40 (Local)',categoria:'Conservador',cliente:'Local',fechaCompra:'2024-02-09',costo:14945,plazo:18,mantAnual:850,mesesPagados:18,estado:'Liquidado',notas:'GELO125CWHCS / 40 bolsas',reinvertidoEn:''},
+  {id:'ACT007',nombre:'Conservador Glacial 40 (SS Ayapa)',categoria:'Conservador',cliente:'SS Ayapa',fechaCompra:'2024-02-20',costo:14097,plazo:18,mantAnual:850,mesesPagados:18,estado:'Liquidado',notas:'GELO125CWHCS / 40 bolsas',reinvertidoEn:''},
+  {id:'ACT008',nombre:'Máquina Cilindro ICEMA 1T',categoria:'Máquina Hielo',cliente:'Alejo Torres 142 Int.',fechaCompra:'2024-06-28',costo:0,plazo:60,mantAnual:20000,mesesPagados:0,estado:'Activo',notas:'Recibida Dic 2024. Mantenimiento mayor anual $20,000'},
+  {id:'ACT009',nombre:'Mini Planta Purificadora 2000L',categoria:'Planta Purificadora',cliente:'Alejo Torres 142 Int.',fechaCompra:'2025-01-10',costo:0,plazo:36,mantAnual:3000,mesesPagados:0,estado:'Activo',notas:'Ósmosis 100 / 2000 lts'},
+  {id:'ACT010',nombre:'Purikor Tratamiento Agua',categoria:'Equipo',cliente:'Local',fechaCompra:'2025-03-03',costo:0,plazo:24,mantAnual:1200,mesesPagados:0,estado:'Activo',notas:'PKRO100-6UVPM'},
+  {id:'ACT011',nombre:'Máquina Torrey',categoria:'Máquina Hielo',cliente:'Local',fechaCompra:'2023-09-28',costo:0,plazo:24,mantAnual:5000,mesesPagados:0,estado:'Activo',notas:'Garantía vencida Sep 2024'},
+  {id:'ACT012',nombre:'Congelador Torrey CHTC-145',categoria:'Congelador',cliente:'Local',fechaCompra:'2023-09-19',costo:16869,plazo:18,mantAnual:700,mesesPagados:8,estado:'Stand By',notas:'27 bolsas / 8 meses pagados, faltan 10'},
+  {id:'ACT013',nombre:'Conservador FrioCima SS1 (Alejo Torres)',categoria:'Conservador',cliente:'SS1 Alejo Torres',fechaCompra:'2025-03-25',costo:21066,plazo:18,mantAnual:850,mesesPagados:10,estado:'Activo',notas:'FCC-40-2 / E25/14545 / 40 bolsas / faltan 8 meses'},
+  {id:'ACT014',nombre:'Conservador FrioCima SS2 (Mercado)',categoria:'Conservador',cliente:'SS2 Mercado',fechaCompra:'2025-03-25',costo:21066,plazo:18,mantAnual:850,mesesPagados:10,estado:'Activo',notas:'FCC-40-2 / E25/14561 / 40 bolsas / faltan 8 meses'},
+  {id:'ACT015',nombre:'Conservador FrioCima SS3 (Centro Salud)',categoria:'Conservador',cliente:'SS3 Centro Salud',fechaCompra:'2025-03-25',costo:21066,plazo:18,mantAnual:850,mesesPagados:10,estado:'Activo',notas:'FCC-40-2 / D24/14508 / 40 bolsas / faltan 8 meses'},
+  {id:'ACT016',nombre:'Conservador FrioCima SS4 (Alejo Torres)',categoria:'Conservador',cliente:'SS4 Alejo Torres',fechaCompra:'2025-03-25',costo:21066,plazo:18,mantAnual:850,mesesPagados:10,estado:'Activo',notas:'FCC-40-2 / E25/14554 / 40 bolsas / faltan 8 meses'},
+  {id:'ACT017',nombre:'Conservador FrioCima SS10 (Jalpa)',categoria:'Conservador',cliente:'SS10 Jalpa',fechaCompra:'2025-08-01',costo:22642.82,plazo:18,mantAnual:850,mesesPagados:3,estado:'Activo',notas:'FCC-40-2 / G25/15414 / 40 bolsas / faltan 15 meses'},
+  {id:'ACT018',nombre:'Dino (Termo Azul 60 bolsas)',categoria:'Equipo',cliente:'Aleatorio',fechaCompra:'2024-04-26',costo:0,plazo:12,mantAnual:300,mesesPagados:0,estado:'Activo',notas:'THERMO THOR 800 / 60 bolsas'},
+  {id:'ACT019',nombre:'Auto BYD Dolphin',categoria:'Vehículo',cliente:'',fechaCompra:'2024-01-01',costo:207900,plazo:36,mantAnual:8000,mesesPagados:6,estado:'Activo',notas:'6 meses pagados, faltan 30'},
 ];
 const SUPABASE_URL='https://hdiugadrnvepalrxjljq.supabase.co';
 const SUPABASE_KEY='sb_publishable_aXOSFoHgUsmwPG-FaGvReQ_fhDFNrrR';
@@ -516,22 +334,14 @@ function normalize(x){
   d.pagosActivos=Array.isArray(d.pagosActivos)?d.pagosActivos:[];
   /* Si activos vacío y hay master, poblar con maestros */
   if(d.activos.length===0){d.activos=JSON.parse(JSON.stringify(ACTIVOS_MASTER));}
-  d.activos.forEach(a=>{a.id=a.id||nextActivoId();a.costo=+a.costo||0;a.plazo=+a.plazo||18;a.mantAnual=+a.mantAnual||0;a.mesesPagados=+a.mesesPagados||0;if(a.aplicaMant===undefined)a.aplicaMant=true;if(a.costoPorConfirmar===undefined)a.costoPorConfirmar=false;if(a.mantPorConfirmar===undefined)a.mantPorConfirmar=false;});
-  d.pagosActivos.forEach(p=>{p.id=p.id||('PAG'+p.ts);p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
-  applyExcelActivosPatch(d);
+  d.activos.forEach(a=>{a.costo=+a.costo||0;a.plazo=+a.plazo||18;a.mantAnual=+a.mantAnual||0;a.mesesPagados=+a.mesesPagados||0;});
+  d.pagosActivos.forEach(p=>{p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
   return d;
 }
 function maxTs(d){let a=[...(d.sales||[]),...(d.expenses||[]),...(d.movements||[]),...(d.maintenance||[])].map(x=>+x.ts||0); Object.values(d.checks||{}).forEach(c=>a.push(+c.ts||0)); return Math.max(0,...a);}
-function newer(a,b){
-  a=normalize(a); b=normalize(b);
-  const ca=recordCount(a), cb=recordCount(b);
-  if(ca>0&&cb===0) return a;
-  if(cb>0&&ca===0) return b;
-  if(Math.abs(ca-cb)>=3) return ca>cb?a:b;
-  return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;
-}
+function newer(a,b){return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;}
 function setOnlineStatus(txt){let p=document.querySelector('.pill'); if(p) p.innerHTML=txt+'<br><b id="today">'+new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+'</b>';}
-let db=normalize(loadBestLocalDB());
+let db=normalize(JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||JSON.stringify(blank)));
 function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
 function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
 function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
@@ -572,7 +382,7 @@ async function syncNow(silent=false){
   try{
     await ensureStorageBucket();
     const remote=await fetchRemoteDB();
-    if(remote){ db=mergeKeepHistory(db, newer(db,remote)); }
+    if(remote){ db=normalize(newer(db,remote)); }
     db.__updatedAt=Date.now(); persistLocal(); recalcStock(); render();
     await uploadRemoteDB();
     setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado con Supabase');
@@ -599,9 +409,6 @@ function mergeKeepHistory(a,b){
   const sig=(x)=>[x.ts,x.date,x.client,x.tipo,x.qty,x.total,x.provider,x.amount,x.equipo,x.desc,x.mov].map(v=>String(v??'')).join('|');
   ['sales','movements','expenses','maintenance'].forEach(k=>{let m=new Map();[...(a[k]||[]),...(b[k]||[])].forEach(x=>m.set(sig(x),x));a[k]=[...m.values()]});
   a.checks=Object.assign({},b.checks||{},a.checks||{});
-  ['activos'].forEach(k=>{let m=new Map();[...(b[k]||[]),...(a[k]||[])].forEach(x=>m.set(x.id||sig(x),Object.assign({},m.get(x.id||sig(x))||{},x)));a[k]=[...m.values()]});
-  ['pagosActivos'].forEach(k=>{let m=new Map();[...(b[k]||[]),...(a[k]||[])].forEach(x=>m.set(x.id||sig(x),x));a[k]=[...m.values()]});
-  applyExcelActivosPatch(a);
   a.__updatedAt=Math.max(+a.__updatedAt||0,+b.__updatedAt||0,Date.now());
   recalcStockFor(a);
   return a;
@@ -1472,8 +1279,8 @@ function downloadAdvancedExcel(){
     buildChecklist(wb,d);
     buildKlar(wb,d);
     buildDeudas(wb,d);
-    buildActivos(wb);
-    buildPagosActivos(wb);
+    buildActivos(wb,d);
+    buildPagosActivos(wb,d);
     let fname='Hielitos_AHH_Master_'+advPeriodLabel().replace(/\s/g,'_').replace(/\//g,'-')+'_'+today()+'.xlsx';
     wb.xlsx.writeBuffer().then(buf=>{
       let blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -1494,93 +1301,82 @@ function downloadAdvancedExcel(){
 
 let editingActivoId=null;
 let currentActivoFilter='Todos';
-let currentActivosTab='activos';
 
-/* ─── Helpers de cálculo ─── */
+function nextActivoId(){
+  let max=0;
+  (db.activos||[]).forEach(a=>{let n=parseInt((a.id||'').replace('ACT',''))||0;if(n>max)max=n;});
+  return 'ACT'+String(max+1).padStart(3,'0');
+}
+
 function cuotaMensual(a){
-  let plazo=+a.plazo||18, costo=+a.costo||0;
+  let plazo=+a.plazo||18;
+  let costo=+a.costo||0;
   if(!costo||!plazo) return 0;
   return costo/plazo;
 }
-function pagosRegistradosActivo(a){return (db.pagosActivos||[]).filter(p=>p.activoId===a.id).reduce((s,p)=>s+n2(p.monto),0);}
-function recuperadoTeoricoMeses(a){return Math.min(n2(a.costo),cuotaMensual(a)*(+a.mesesPagados||0));}
-function recuperadoBaseActivo(a){
-  if(hasFondoExcel(a)) return fondoDisponibleActivo(a);
-  if(['Reinvertido','Liquidado'].includes(a.estado)) return n2(a.costo);
-  return recuperadoTeoricoMeses(a);
+
+function mesesRestantes(a){
+  return Math.max(0,(+a.plazo||0)-(+a.mesesPagados||0));
 }
-function acumuladoRecuperado(a){ return Math.min(n2(a.costo)||Infinity, recuperadoBaseActivo(a)); }
-function mesesPagadosReales(a){let cuota=cuotaMensual(a); return cuota?Math.min(+a.plazo||0,Math.floor(acumuladoRecuperado(a)/cuota)):(+a.mesesPagados||0);}
-function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-mesesPagadosReales(a)); }
-function saldoPendienteActivo(a){ return Math.max(0,n2(a.costo)-acumuladoRecuperado(a)); }
-function avancePct(a){ let c=n2(a.costo); if(!c) return(a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
+
+function acumuladoRecuperado(a){
+  /* Suma de pagos registrados para este activo */
+  return (db.pagosActivos||[]).filter(p=>p.activoId===a.id).reduce((s,p)=>s+(+p.monto||0),0);
+}
+
+function saldoPendienteActivo(a){
+  return Math.max(0,(+a.costo||0)-acumuladoRecuperado(a));
+}
+
+function avancePct(a){
+  let costo=+a.costo||0;
+  if(!costo) return 100;
+  let rec=acumuladoRecuperado(a);
+  return Math.min(100,Math.round(rec/costo*100));
+}
 
 function activoSemaforo(a){
-  if(a.estado==='Reinvertido') return {color:'#8b5cf6',label:'🔵 Reinvertido',bg:'#f5f3ff'};
-  if(a.estado==='Liquidado')   return {color:'var(--ok)',label:'🟢 Liquidado',bg:'#f0fff9'};
-  if(a.estado==='Fuera de uso')return {color:'var(--muted)',label:'⚫ Fuera de uso',bg:'#f4f4f4'};
-  if(a.estado==='Stand By')    return {color:'var(--warn)',label:'⏸️ Stand By',bg:'#fff8e7'};
-  // Activo
-  let pct=avancePct(a), mr=mesesRestantes(a);
-  if(mr<=2&&pct<100) return {color:'var(--bad)',label:'🔴 Por vencer',bg:'#fff0f0'};
-  if(pct>=75) return {color:'var(--ok)',label:'🟢 En curso',bg:'#f0fff9'};
-  return {color:'var(--warn)',label:'🟡 En curso',bg:'#fff8e7'};
+  let pct=avancePct(a);
+  if(a.estado==='Liquidado') return {color:'var(--ok)',label:'🟢 Liquidado'};
+  if(a.estado==='Reinvertido') return {color:'#8b5cf6',label:'🔵 Reinvertido'};
+  if(a.estado==='Fuera de uso') return {color:'var(--muted)',label:'⚫ Fuera de uso'};
+  if(a.estado==='Stand By') return {color:'var(--warn)',label:'🟡 Stand By'};
+  if(pct>=100) return {color:'var(--ok)',label:'🟢 Liquidado'};
+  if(mesesRestantes(a)<=2) return {color:'var(--bad)',label:'🔴 Por vencer'};
+  if(pct>=75) return {color:'var(--ok)',label:'🟢 Bien'};
+  if(pct>=40) return {color:'var(--warn)',label:'🟡 En curso'};
+  return {color:'var(--bad)',label:'🔴 Atrasado'};
 }
 
-function nextActivoId(){ let max=0; (db.activos||[]).forEach(a=>{let n=parseInt((a.id||'').replace('ACT',''))||0;if(n>max)max=n;}); return 'ACT'+String(max+1).padStart(3,'0'); }
-
-/* ─── Switch tabs internos ─── */
-function switchActivosTab(tab){
-  currentActivosTab=tab;
-  ['activos','pagos','mant'].forEach(t=>{
-    let panel=document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1));
-    let btn=document.getElementById('tabAct'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(panel) panel.style.display=t===tab?'block':'none';
-    if(btn){ btn.className=t===tab?'btn':'btn alt'; }
-  });
-  if(tab==='activos') renderActivosList();
-  if(tab==='pagos') renderPagosList();
-  if(tab==='mant') renderFondosMant();
-}
-
-/* ─── KPIs ─── */
 function renderActivosKpis(){
-  let ac=db.activos||[];
-  let total=ac.length;
-  let enCurso=ac.filter(a=>a.estado==='Activo').length;
-  let standBy=ac.filter(a=>a.estado==='Stand By').length;
-  let reinvert=ac.filter(a=>a.estado==='Reinvertido').length;
-  let atras=ac.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
-  let pagoMensual=ac.filter(a=>a.estado==='Activo'&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaMensual(a),0);
-  let saldoPend=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+saldoPendienteActivo(a),0);
-  let fondoRecup=ac.filter(a=>['Activo','Stand By'].includes(a.estado)).reduce((s,a)=>s+fondoDisponibleActivo(a),0);
-  let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+n2(a.mantAnual),0);
-  let mantMensual=mantAnualTotal/12;
+  let activos=db.activos||[];
+  let total=activos.length;
+  let liquidados=activos.filter(a=>a.estado==='Liquidado'||avancePct(a)>=100).length;
+  let enCurso=activos.filter(a=>a.estado==='Activo'&&avancePct(a)<100).length;
+  let atrasados=activos.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
+  let pagoMensual=activos.filter(a=>a.estado==='Activo').reduce((s,a)=>s+cuotaMensual(a),0);
+  let fondoRecup=activos.reduce((s,a)=>s+acumuladoRecuperado(a),0);
+  let fondoMant=(db.pagosActivos||[]).filter(p=>p.tipo==='Mantenimiento').reduce((s,p)=>s+(+p.monto||0),0);
+  let saldoPend=activos.filter(a=>a.estado==='Activo').reduce((s,a)=>s+saldoPendienteActivo(a),0);
   if(window.akTotal) akTotal.textContent=total;
+  if(window.akLiquidados) akLiquidados.textContent=liquidados;
   if(window.akEnCurso) akEnCurso.textContent=enCurso;
-  if(window.akStandBy) akStandBy.textContent=standBy;
-  if(window.akReinvertidos) akReinvertidos.textContent=reinvert;
-  if(window.akAtrasados) akAtrasados.textContent=atras;
-  if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual)+(pagoMensual===0&&enCurso>0?' (confirmar costos)':'');
-  if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
+  if(window.akAtrasados) akAtrasados.textContent=atrasados;
+  if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual);
   if(window.akFondoRecup) akFondoRecup.textContent=money(fondoRecup);
-  if(window.akMantAnualTotal) akMantAnualTotal.textContent=money(mantAnualTotal);
-  if(window.akMantMensual) akMantMensual.textContent=money(mantMensual);
+  if(window.akFondoMant) akFondoMant.textContent=money(fondoMant);
+  if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
 }
 
-/* ─── Lista de activos ─── */
 function renderActivosList(){
   if(!window.activosList) return;
-  let estados=['Todos','Activo','Stand By','Reinvertido','Liquidado','Fuera de uso'];
+  /* Filtros */
+  let estados=['Todos','Activo','Liquidado','Stand By','Reinvertido','Fuera de uso'];
   if(window.activosFilters){
     activosFilters.innerHTML=estados.map(e=>`<button class="${e===currentActivoFilter?'active':''}" onclick="currentActivoFilter='${e}';renderActivosList()">${e}</button>`).join('');
   }
-  let ac=(db.activos||[]).filter(a=>currentActivoFilter==='Todos'||a.estado===currentActivoFilter);
-  // Sort: Activo → Stand By → Reinvertido → Liquidado → Fuera de uso
-  let order=['Activo','Stand By','Reinvertido','Liquidado','Fuera de uso'];
-  ac.sort((a,b)=>order.indexOf(a.estado)-order.indexOf(b.estado));
-
-  activosList.innerHTML=ac.length?ac.map(a=>{
+  let activos=(db.activos||[]).filter(a=>currentActivoFilter==='Todos'||a.estado===currentActivoFilter);
+  activosList.innerHTML=activos.length?activos.map(a=>{
     let pct=avancePct(a);
     let cuota=cuotaMensual(a);
     let rec=acumuladoRecuperado(a);
@@ -1588,135 +1384,88 @@ function renderActivosList(){
     let mr=mesesRestantes(a);
     let sem=activoSemaforo(a);
     let barCls=pct>=90?'':pct>=50?'warn':'bad';
-    let costoLabel=a.costoPorConfirmar?'<span style="color:var(--warn);font-size:10px;font-weight:900"> ⚠️ por confirmar</span>':'';
-    let mantLabel=!a.aplicaMant?'<span style="color:var(--muted);font-size:10px">No aplica mant.</span>':a.mantPorConfirmar?'<span style="color:var(--warn);font-size:10px;font-weight:900">🔧 Mant. por confirmar</span>':`<span style="color:var(--ok);font-size:10px">🔧 Mant. ${money(a.mantAnual)}/año</span>`;
-    let catIcon=a.categoria==='Conservador'?'📦':a.categoria==='Congelador'?'❄️':a.categoria==='Máquina Hielo'?'🧊':a.categoria==='Planta Purificadora'?'💧':a.categoria==='Vehículo'?'🚗':'🔧';
-
-    let bodyContent='';
-    if(a.estado==='Reinvertido'){
-      bodyContent=`<div style="background:${sem.bg};border-radius:12px;padding:10px;font-size:12px">
-        <b>💰 Costo recuperado:</b> ${money(a.costo)} · <b>Reinvertido en:</b> ${a.reinvertidoEn||'—'}
-        ${a.aplicaMant?`<br>🔧 ${mantLabel}`:''}
-      </div>`;
-    } else if(!a.costoPorConfirmar&&a.costo>0){
-      bodyContent=`<div style="background:#f4fbff;border-radius:12px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:8px">
-        <div><span style="color:var(--muted)">Costo total</span><br><b>${money(a.costo)}</b></div>
-        <div><span style="color:var(--muted)">Cuota mensual</span><br><b>${money(cuota)}</b></div>
-        <div><span style="color:var(--muted)">Recuperado</span><br><b style="color:var(--ok)">${money(rec)}</b></div>
-        <div><span style="color:var(--muted)">Saldo pendiente</span><br><b style="color:var(--bad)">${money(saldo)}</b></div>
-        <div><span style="color:var(--muted)">Meses pagados/plazo</span><br><b>${a.mesesPagados}/${a.plazo}</b></div>
-        <div><span style="color:var(--muted)">Meses restantes</span><br><b>${mr}</b></div>
-      </div>
-      <div style="margin-top:8px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px"><small style="color:var(--muted)">Avance recuperación</small><small style="font-weight:900;color:${sem.color}">${pct}%</small></div>
-        <div class="progress" style="height:12px"><div class="bar ${barCls}" style="width:${pct}%"></div></div>
-      </div>`;
-    } else if(a.costoPorConfirmar){
-      bodyContent=`<div style="background:#fff8e7;border-radius:12px;padding:10px;font-size:12px;color:var(--warn);font-weight:700">
-        ⚠️ Costo de adquisición pendiente de confirmar — edita el activo para ingresarlo y el sistema calculará automáticamente.
-      </div>`;
-    }
-
-    return `<div class="item" style="flex-direction:column;align-items:stretch;gap:8px;background:${sem.bg}">
+    return `<div class="item" style="flex-direction:column;align-items:stretch;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="flex:1">
-          <b style="font-size:13px;color:var(--azul)">${catIcon} ${a.nombre}</b>${costoLabel}
+          <b style="font-size:14px;color:var(--azul)">${a.categoria==='Conservador'?'📦':a.categoria==='Congelador'?'❄️':a.categoria==='Máquina Hielo'?'🧊':a.categoria==='Vehículo'?'🚗':a.categoria==='Planta Purificadora'?'💧':'🔧'} ${a.nombre}</b>
           ${a.cliente?`<br><small style="color:var(--muted)">📍 ${a.cliente}</small>`:''}
-          ${a.fechaCompra?`<br><small style="color:var(--muted)">🗓️ ${a.fechaCompra}</small>`:''}
-          <br>${mantLabel}
-          ${a.reinvertidoEn&&a.estado==='Reinvertido'?`<br><small style="color:#8b5cf6">🔵 → ${a.reinvertidoEn}</small>`:''}
-          ${a.notas?`<br><small style="color:var(--muted);font-size:11px">📝 ${a.notas}</small>`:''}
+          ${a.fechaCompra?`<br><small style="color:var(--muted)">🗓️ Compra: ${a.fechaCompra}</small>`:''}
+          ${a.notas?`<br><small style="color:var(--muted)">📝 ${a.notas}</small>`:''}
+          ${a.reinvertidoEn?`<br><small style="color:#8b5cf6">🔵 Reinvertido en: ${a.reinvertidoEn}</small>`:''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <div class="actions">
           <span style="background:${sem.color};color:#fff;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap">${sem.label}</span>
           <button class="mini" onclick="editActivo('${a.id}')">Editar</button>
           <button class="mini bad" onclick="deleteActivo('${a.id}')">Eliminar</button>
         </div>
       </div>
-      ${bodyContent}
+      ${a.costo>0?`
+      <div style="background:#f4fbff;border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><small style="color:var(--muted)">Costo total</small><br><b>${money(a.costo)}</b></div>
+        <div><small style="color:var(--muted)">Cuota mensual</small><br><b>${money(cuota)}</b></div>
+        <div><small style="color:var(--muted)">Recuperado</small><br><b style="color:var(--ok)">${money(rec)}</b></div>
+        <div><small style="color:var(--muted)">Saldo pendiente</small><br><b style="color:var(--bad)">${money(saldo)}</b></div>
+        <div><small style="color:var(--muted)">Meses pagados</small><br><b>${a.mesesPagados}/${a.plazo}</b></div>
+        <div><small style="color:var(--muted)">Meses restantes</small><br><b>${mr}</b></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <small style="color:var(--muted)">Avance recuperación</small>
+          <small style="font-weight:900;color:${sem.color}">${pct}%</small>
+        </div>
+        <div class="progress" style="height:14px"><div class="bar ${barCls}" style="width:${pct}%"></div></div>
+      </div>
+      `:a.mantAnual>0?`<div style="background:#f4fbff;border-radius:14px;padding:10px"><small style="color:var(--muted)">Mant. anual estimado:</small> <b>${money(a.mantAnual)}</b> · Mensual: <b>${money(a.mantAnual/12)}</b></div>`:''}
+      ${a.mantAnual>0?`<div style="background:#fff8e7;border-radius:12px;padding:8px;font-size:12px">🔧 Fondo mant. mensual sugerido: <b>${money(a.mantAnual/12)}</b></div>`:''}
     </div>`;
-  }).join(''):`<div class="item"><div><b>Sin activos</b><br><small>Usa ＋ Agregar para crear el primero</small></div></div>`;
+  }).join(''):('<div class="item"><div><b>Sin activos</b><br><small>Agrega activos con el botón ＋</small></div></div>');
 }
 
-/* ─── Pagos / Recuperación ─── */
 function renderPagosList(){
   if(!window.pagosList) return;
-  let pagos=[...(db.pagosActivos||[])].sort((a,b)=>(b.ts||0)-(a.ts||0));
-  if(!pagos.length){pagosList.innerHTML='<div class="item"><div><b>Sin pagos registrados</b><br><small>Registra los pagos recibidos para recuperar la inversión</small></div></div>';return;}
-  let totalRecup=pagos.reduce((s,p)=>s+(+p.monto||0),0);
-  pagosList.innerHTML=`<div style="background:#e9f5ff;border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:13px;font-weight:900;color:var(--azul)">✅ Total recuperado acumulado</span>
-    <span style="font-size:18px;font-weight:900;color:var(--ok)">${money(totalRecup)}</span>
-  </div>`+pagos.map(p=>{
+  let pagos=[...(db.pagosActivos||[])].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,100);
+  pagosList.innerHTML=pagos.length?pagos.map(p=>{
     let a=(db.activos||[]).find(x=>x.id===p.activoId)||{nombre:'?'};
-    let icon=p.metodo==='Efectivo'?'💵':p.metodo==='KLAR'?'🏦':'🔀';
-    let detalle=p.metodo==='Mixto'?` · Ef: ${money(p.efectivo)} + KLAR: ${money(p.klarMonto)}`:'';
+    let metodoIcon=p.metodo==='Efectivo'?'💵':p.metodo==='KLAR'?'🏦':'🔀';
+    let detalleMetodo=p.metodo==='Mixto'?` (Ef: ${money(p.efectivo)} + KLAR: ${money(p.klarMonto)})`:'';
     return `<div class="item">
-      <div><b>${icon} ${a.nombre}</b><br><small>📅 ${p.fecha||'—'} · ${money(p.monto)}${detalle} · ${p.metodo}${p.comment?' · '+p.comment:''}</small></div>
+      <div><b>${metodoIcon} ${a.nombre}</b><br>
+      <small>${p.fecha||''} · ${money(p.monto)}${detalleMetodo} · ${p.metodo}${p.comment?' · '+p.comment:''}</small></div>
       <div class="actions"><button class="mini bad" onclick="deletePago('${p.id}')">Eliminar</button></div>
     </div>`;
-  }).join('');
+  }).join(''):'<div class="item"><div><b>Sin pagos registrados</b></div></div>';
 }
 
-/* ─── Fondo de Mantenimiento ─── */
 function renderFondosMant(){
   if(!window.fondosMantList) return;
-  let ac=(db.activos||[]).filter(a=>a.aplicaMant);
-  if(!ac.length){fondosMantList.innerHTML='<div class="item"><div><b>Sin activos con mantenimiento</b></div></div>';return;}
-
-  let totalAnual=ac.filter(a=>!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+(+a.mantAnual||0),0);
-  let pcItems=ac.filter(a=>a.mantPorConfirmar);
-
-  fondosMantList.innerHTML=`<div style="background:#f0fff9;border-radius:14px;padding:12px;margin-bottom:10px">
-    <div style="font-size:11px;font-weight:900;color:var(--ok);text-transform:uppercase;margin-bottom:4px">Totales conocidos</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
-      <div><span style="color:var(--muted)">Total anual estimado</span><br><b>${money(totalAnual)}${pcItems.length?` <span style="color:var(--warn)">+${pcItems.length} por confirmar</span>`:''}</b></div>
-      <div><span style="color:var(--muted)">Ahorro mensual sugerido</span><br><b>${money(totalAnual/12)}${pcItems.length?`<span style="color:var(--warn)">+?</span>`:''}</b></div>
-    </div>
-  </div>`+ac.map(a=>{
-    if(a.mantPorConfirmar){
-      return `<div style="border:1px dashed var(--warn);border-radius:16px;padding:12px;margin-bottom:8px;background:#fff8e7">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <b style="font-size:13px;color:var(--azul)">${a.nombre}</b>
-          <button class="mini warn" onclick="editActivo('${a.id}')" style="background:#fff8e7;color:var(--warn);border:1px solid var(--warn)">⚠️ Confirmar monto</button>
-        </div>
-        <small style="color:var(--warn);font-weight:700">Monto mantenimiento por confirmar — toca para actualizarlo</small>
-      </div>`;
-    }
+  let activos=(db.activos||[]).filter(a=>+a.mantAnual>0);
+  fondosMantList.innerHTML=activos.length?activos.map(a=>{
     let mensual=a.mantAnual/12;
     let acum=(db.pagosActivos||[]).filter(p=>p.activoId===a.id&&p.tipo==='Mantenimiento').reduce((s,p)=>s+(+p.monto||0),0);
-    let pct=a.mantAnual>0?Math.min(100,Math.round(acum/a.mantAnual*100)):0;
+    let pct=Math.min(100,a.mantAnual>0?Math.round(acum/a.mantAnual*100):0);
     let barCls=pct>=90?'':pct>=50?'warn':'bad';
-    let estadoBadge=a.estado==='Reinvertido'?'<span style="background:#8b5cf6;color:#fff;border-radius:999px;font-size:10px;padding:2px 8px;margin-left:6px">Reinvertido</span>':
-                    a.estado==='Stand By'?'<span style="background:var(--warn);color:#fff;border-radius:999px;font-size:10px;padding:2px 8px;margin-left:6px">Stand By</span>':'';
-    return `<div style="border:1px solid var(--line);border-radius:16px;padding:12px;background:#fff;margin-bottom:8px">
-      <b style="font-size:13px;color:var(--azul)">${a.nombre}${estadoBadge}</b>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;font-size:12px">
-        <div><span style="color:var(--muted)">Mant. anual</span><br><b>${money(a.mantAnual)}</b></div>
-        <div><span style="color:var(--muted)">Ahorro mensual</span><br><b>${money(mensual)}</b></div>
-        <div><span style="color:var(--muted)">Acumulado fondo</span><br><b style="color:var(--ok)">${money(acum)}</b></div>
-        <div><span style="color:var(--muted)">Faltante para el año</span><br><b style="color:${a.mantAnual-acum>0?'var(--bad)':'var(--ok)'}">${money(Math.max(0,a.mantAnual-acum))}</b></div>
+    return `<div style="border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff;margin-bottom:8px">
+      <b style="font-size:13px">🔧 ${a.nombre}</b>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;font-size:12px">
+        <div><span style="color:var(--muted)">Mant. anual estimado</span><br><b>${money(a.mantAnual)}</b></div>
+        <div><span style="color:var(--muted)">Ahorro mensual sugerido</span><br><b>${money(mensual)}</b></div>
+        <div><span style="color:var(--muted)">Acumulado fondo mant.</span><br><b style="color:var(--ok)">${money(acum)}</b></div>
+        <div><span style="color:var(--muted)">Saldo faltante para año</span><br><b style="color:var(--bad)">${money(Math.max(0,a.mantAnual-acum))}</b></div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><small>Fondo acumulado del año</small><small style="font-weight:900">${pct}%</small></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><small>Fondo acumulado</small><small style="font-weight:900">${pct}%</small></div>
       <div class="progress"><div class="bar ${barCls}" style="width:${pct}%"></div></div>
     </div>`;
-  }).join('');
+  }).join(''):'<div class="item"><div><b>Sin activos con mantenimiento configurado</b></div></div>';
 }
 
-/* ─── Render principal ─── */
 function renderActivos(){
   renderActivosKpis();
-  if(currentActivosTab==='activos') renderActivosList();
-  if(currentActivosTab==='pagos') renderPagosList();
-  if(currentActivosTab==='mant') renderFondosMant();
+  renderActivosList();
+  renderPagosList();
+  renderFondosMant();
 }
 
-/* ─── Modales ─── */
-function toggleMantFields(){
-  let cb=document.getElementById('acAplicaMant');
-  let fields=document.getElementById('acMantFields');
-  if(fields) fields.style.display=cb?.checked?'block':'none';
-}
+/* ── Abrir/cerrar modales ── */
 function openAddActivoModal(id){
   editingActivoId=id||null;
   let a=id?(db.activos||[]).find(x=>x.id===id):null;
@@ -1726,24 +1475,19 @@ function openAddActivoModal(id){
   document.getElementById('acEstado').value=a?.estado||'Activo';
   document.getElementById('acFechaCompra').value=a?.fechaCompra||today();
   document.getElementById('acCosto').value=a?.costo||0;
-  document.getElementById('acCostoPC').checked=!!(a?.costoPorConfirmar);
   document.getElementById('acPlazo').value=a?.plazo||18;
-  document.getElementById('acMesesPagados').value=a?.mesesPagados||0;
-  document.getElementById('acAplicaMant').checked=!!(a?.aplicaMant);
   document.getElementById('acMantAnual').value=a?.mantAnual||0;
-  document.getElementById('acMantPC').checked=!!(a?.mantPorConfirmar);
+  document.getElementById('acMesesPagados').value=a?.mesesPagados||0;
   document.getElementById('acReinvertidoEn').value=a?.reinvertidoEn||'';
-  document.getElementById('acNotas').value=a?.notas||'';
-  toggleMantFields();
   document.getElementById('modalAddActivo').style.display='block';
 }
 function closeAddActivoModal(){ document.getElementById('modalAddActivo').style.display='none'; editingActivoId=null; }
 function editActivo(id){ openAddActivoModal(id); }
 function deleteActivo(id){ if(confirm('¿Eliminar este activo?')){db.activos=(db.activos||[]).filter(a=>a.id!==id);save();renderActivos();} }
+
 function saveActivo(){
   let nombre=document.getElementById('acNombre').value.trim();
   if(!nombre) return toast('⚠️ Ingresa el nombre del activo');
-  let aplicaMant=document.getElementById('acAplicaMant').checked;
   let obj={
     id:editingActivoId||nextActivoId(),
     nombre,
@@ -1752,40 +1496,45 @@ function saveActivo(){
     estado:document.getElementById('acEstado').value,
     fechaCompra:document.getElementById('acFechaCompra').value||today(),
     costo:+document.getElementById('acCosto').value||0,
-    costoPorConfirmar:document.getElementById('acCostoPC').checked,
     plazo:+document.getElementById('acPlazo').value||18,
+    mantAnual:+document.getElementById('acMantAnual').value||0,
     mesesPagados:+document.getElementById('acMesesPagados').value||0,
-    aplicaMant,
-    mantAnual:aplicaMant?(+document.getElementById('acMantAnual').value||0):0,
-    mantPorConfirmar:aplicaMant&&document.getElementById('acMantPC').checked,
     reinvertidoEn:document.getElementById('acReinvertidoEn').value.trim(),
-    notas:document.getElementById('acNotas').value.trim(),
+    notas:'',
   };
   if(!db.activos) db.activos=[];
-  if(editingActivoId){ let idx=db.activos.findIndex(a=>a.id===editingActivoId); if(idx>=0) db.activos[idx]=obj; else db.activos.push(obj); }
-  else db.activos.push(obj);
+  if(editingActivoId){
+    let idx=db.activos.findIndex(a=>a.id===editingActivoId);
+    if(idx>=0){let old=db.activos[idx];obj.notas=old.notas||'';db.activos[idx]=obj;}
+    else db.activos.push(obj);
+  } else {
+    db.activos.push(obj);
+  }
   closeAddActivoModal();
-  save(); renderActivos(); toast('✅ Activo guardado');
+  save();
+  renderActivos();
 }
 
-/* ─── Modal pago ─── */
+/* ── Modal pago activo ── */
 function openAddPagoActivoModal(){
   let sel=document.getElementById('pagoActivoSel');
   if(!sel) return;
-  sel.innerHTML=(db.activos||[]).filter(a=>['Activo','Stand By'].includes(a.estado)).map(a=>`<option value="${a.id}">${a.nombre}</option>`).join('');
-  if(!sel.options.length){ toast('⚠️ No hay activos en curso para registrar pagos'); return; }
+  sel.innerHTML=(db.activos||[]).map(a=>`<option value="${a.id}">${a.nombre}</option>`).join('');
   document.getElementById('pagoFecha').value=today();
   document.getElementById('pagoMonto').value=0;
   document.getElementById('pagoEfectivo').value=0;
   document.getElementById('pagoKlarMonto').value=0;
   document.getElementById('pagoComment').value='';
+  /* Reset method */
   document.querySelectorAll('[data-pago-method]').forEach(x=>x.classList.remove('active'));
-  let ef=document.querySelector('[data-pago-method="Efectivo"]'); if(ef) ef.classList.add('active');
+  let ef=document.querySelector('[data-pago-method="Efectivo"]');
+  if(ef) ef.classList.add('active');
   if(document.getElementById('pagoMixtoRow')) document.getElementById('pagoMixtoRow').style.display='none';
   if(document.getElementById('pagoMontoRow')) document.getElementById('pagoMontoRow').style.display='block';
   document.getElementById('modalAddPago').style.display='block';
 }
 function closePagoActivoModal(){ document.getElementById('modalAddPago').style.display='none'; }
+
 function savePagoActivo(){
   let activoId=document.getElementById('pagoActivoSel')?.value;
   if(!activoId) return toast('⚠️ Selecciona un activo');
@@ -1798,99 +1547,100 @@ function savePagoActivo(){
     monto=efectivo+klarMonto;
   } else {
     monto=+document.getElementById('pagoMonto').value||0;
-    if(metodo==='Efectivo') efectivo=monto; else klarMonto=monto;
+    if(metodo==='Efectivo') efectivo=monto;
+    else klarMonto=monto;
   }
   if(!monto) return toast('⚠️ El monto debe ser mayor a 0');
   let comment=document.getElementById('pagoComment').value.trim();
   if(!db.pagosActivos) db.pagosActivos=[];
   db.pagosActivos.push({id:'PAG'+Date.now(),activoId,fecha,metodo,monto,efectivo,klarMonto,comment,tipo:'Recuperacion',ts:Date.now()});
+  /* Actualizar mesesPagados del activo */
   let activo=(db.activos||[]).find(a=>a.id===activoId);
-  if(activo&&!activo.costoPorConfirmar){
-    if(metodo==='Efectivo') activo.efectivoGuardado=n2(activo.efectivoGuardado)+monto;
-    else if(metodo==='KLAR Conservadores'||metodo==='Apartado KLAR Conservadores') activo.klarConservadores=n2(activo.klarConservadores)+monto;
-    else if(metodo==='Transferencia') activo.transferenciaGuardada=n2(activo.transferenciaGuardada)+monto;
-    else if(metodo==='Mixto'){activo.efectivoGuardado=n2(activo.efectivoGuardado)+efectivo; activo.klarConservadores=n2(activo.klarConservadores)+klarMonto;}
-    let cuota=cuotaMensual(activo); if(cuota>0) activo.mesesPagados=mesesPagadosReales(activo);
+  if(activo){
+    let cuota=cuotaMensual(activo);
+    if(cuota>0) activo.mesesPagados=Math.min(activo.plazo,activo.mesesPagados+Math.round(monto/cuota));
   }
-  closePagoActivoModal(); save(); renderActivos(); toast('✅ Pago registrado');
+  closePagoActivoModal();
+  save();
+  renderActivos();
+  toast('✅ Pago registrado');
 }
-function deletePago(id){ if(confirm('¿Eliminar este pago?')){db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.id!==id);save();renderActivos();} }
 
-/* ─── Listeners método pago ─── */
+function deletePago(id){
+  if(confirm('¿Eliminar este pago?')){
+    db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.id!==id);
+    save();renderActivos();
+  }
+}
+
+/* ── Inicializar choice pago method ── */
 (function initPagoMethodChoice(){
   setTimeout(function(){
     document.querySelectorAll('[data-pago-method]').forEach(el=>el.onclick=function(){
       document.querySelectorAll('[data-pago-method]').forEach(x=>x.classList.remove('active'));
       el.classList.add('active');
       let m=el.getAttribute('data-pago-method');
-      let mix=document.getElementById('pagoMixtoRow');
-      let mon=document.getElementById('pagoMontoRow');
-      if(mix) mix.style.display=m==='Mixto'?'grid':'none';
-      if(mon) mon.style.display=m==='Mixto'?'none':'block';
+      let mixtoRow=document.getElementById('pagoMixtoRow');
+      let montoRow=document.getElementById('pagoMontoRow');
+      if(mixtoRow) mixtoRow.style.display=m==='Mixto'?'grid':'none';
+      if(montoRow) montoRow.style.display=m==='Mixto'?'none':'block';
     });
   },500);
 })();
 
-/* ─── Excel sheets ─── */
-function buildActivos(wb){
+/* ═══ Excel Sheet: Activos ═══ */
+function buildActivos(wb,d){
   if(typeof ExcelJS==='undefined') return;
   let ws=wb.addWorksheet('🏭 Activos');
-  setColWidths(ws,[6,32,14,24,13,14,14,8,10,10,12,12,10,8,10,30]);
-  let ac=db.activos||[]; let NC=16;
+  setColWidths(ws,[6,30,16,24,13,13,14,10,12,12,12,12,12,10,30]);
+  let activos=db.activos||[]; let NC=15;
   titleRow(ws,1,'🏭  HIELITOS AHH!! — Control de Activos',NC,XL.AZUL,40);
-  subRow(ws,2,NC,ac.length+' activos');
-  hdrRow(ws,3,['ID','Nombre','Categoría','Cliente/Ubicación','F.Compra','Costo Total','Cuota Mens.','Plazo','Mes.Pag.','Mes.Rest.','Recuperado','Saldo Pend.','Avance%','Estado','Mant.Anual','Notas'],XL.AZUL);
-  ac.forEach((a,i)=>{
-    let rec=acumuladoRecuperado(a),saldo=saldoPendienteActivo(a),pct=avancePct(a);
-    let cuota=cuotaMensual(a),mr=mesesRestantes(a);
+  subRow(ws,2,NC,activos.length+' activos');
+  hdrRow(ws,3,['ID','Nombre Activo','Categoría','Cliente/Ubicación','F.Compra','Costo Total','Cuota Mensual','Plazo','Mes.Pagados','Mes.Rest.','Recuperado','Saldo Pend.','Avance%','Estado','Notas'],XL.AZUL);
+  activos.forEach((a,i)=>{
+    let rec=acumuladoRecuperado(a), saldo=saldoPendienteActivo(a), pct=avancePct(a);
+    let cuota=cuotaMensual(a), mr=mesesRestantes(a);
     let sem=activoSemaforo(a);
-    let bgMap={'Activo':XL.VERDE_L,'Stand By':XL.AMAR_L,'Reinvertido':'FFF5F3FF','Liquidado':XL.VERDE_L,'Fuera de uso':XL.GRIS_H};
-    let bg=bgMap[a.estado]||XL.BLANCO;
+    let bg=a.estado==='Liquidado'?XL.VERDE_L:a.estado==='Stand By'?XL.AMAR_L:a.estado==='Activo'?XL.BLANCO:XL.GRIS_H;
     applyRow(ws,4+i,[
-      {v:a.id,bg,sz:9,border:true},{v:a.nombre||'',bg,bold:true,sz:9,border:true},
-      {v:a.categoria||'',bg,sz:9,border:true},{v:a.cliente||'',bg,sz:9,border:true},
-      {v:a.fechaCompra||'',bg,sz:9,border:true},
-      {v:a.costoPorConfirmar?'Por confirmar':(+a.costo||0),bg,sz:9,fmt:a.costoPorConfirmar?undefined:MFmt,border:true},
-      {v:a.costoPorConfirmar?'Por confirmar':cuota,bg,sz:9,fmt:a.costoPorConfirmar?undefined:MFmt,border:true},
-      {v:+a.plazo||0,bg,sz:9,align:'center',border:true},
-      {v:mesesPagadosReales(a),bg,sz:9,align:'center',border:true},{v:mr,bg,sz:9,align:'center',border:true},
-      {v:rec,bg,fg:XL.VERDE,sz:9,fmt:MFmt,border:true},
-      {v:saldo,bg,fg:saldo>0?XL.ROJO:XL.NEGRO,sz:9,fmt:MFmt,border:true},
-      {v:pct+'%',bg,bold:true,sz:9,align:'center',border:true},
-      {v:a.estado||'',bg,sz:9,align:'center',border:true},
-      {v:!a.aplicaMant?'No aplica':a.mantPorConfirmar?'Por confirmar':(+a.mantAnual||0),bg,sz:9,fmt:(!a.aplicaMant||a.mantPorConfirmar)?undefined:MFmt,border:true},
-      {v:a.notas||'',bg,sz:8,border:true,wrap:true}
+      {v:a.id,bg,sz:10,border:true},{v:a.nombre||'',bg,bold:true,sz:10,border:true},
+      {v:a.categoria||'',bg,sz:10,border:true},{v:a.cliente||'',bg,sz:10,border:true},
+      {v:a.fechaCompra||'',bg,sz:10,border:true},{v:+a.costo||0,bg,sz:10,fmt:MFmt,border:true},
+      {v:cuota,bg,sz:10,fmt:MFmt,border:true},{v:+a.plazo||0,bg,sz:10,align:'center',border:true},
+      {v:+a.mesesPagados||0,bg,sz:10,align:'center',border:true},{v:mr,bg,sz:10,align:'center',border:true},
+      {v:rec,bg,fg:XL.VERDE,sz:10,fmt:MFmt,border:true},{v:saldo,bg,fg:saldo>0?XL.ROJO:XL.NEGRO,sz:10,fmt:MFmt,border:true},
+      {v:pct+'%',bg,bold:true,sz:10,align:'center',border:true},{v:a.estado||'',bg,sz:10,align:'center',border:true},
+      {v:a.notas||'',bg,sz:9,border:true,wrap:true}
     ]);
     setRowHeight(ws,4+i,18);
   });
-  ws.autoFilter={from:{row:3,column:1},to:{row:3,column:16}};
+  ws.autoFilter={from:{row:3,column:1},to:{row:3,column:15}};
   ws.views=[{state:'frozen',xSplit:0,ySplit:3}];
 }
-function buildPagosActivos(wb){
+function buildPagosActivos(wb,d){
   if(typeof ExcelJS==='undefined') return;
-  let ws=wb.addWorksheet('💳 Recuperación Inversión');
-  setColWidths(ws,[14,32,13,14,14,14,14,28]);
+  let ws=wb.addWorksheet('💳 Pagos Activos');
+  setColWidths(ws,[14,30,13,14,14,14,14,25]);
   let pagos=[...(db.pagosActivos||[])].sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
   let NC=8;
-  titleRow(ws,1,'💳  HIELITOS AHH!! — Recuperación de Inversión',NC,XL.AZUL_MED,40);
-  subRow(ws,2,NC,pagos.length+' pagos · Total: $'+pagos.reduce((s,p)=>s+(+p.monto||0),0).toLocaleString('es-MX',{minimumFractionDigits:2}));
-  hdrRow(ws,3,['ID','Activo','Fecha','Método','Monto Total','Efectivo','KLAR','Comentario'],XL.AZUL_MED);
+  titleRow(ws,1,'💳  HIELITOS AHH!! — Pagos de Activos',NC,XL.AZUL_MED,40);
+  subRow(ws,2,NC,pagos.length+' registros');
+  hdrRow(ws,3,['ID Pago','Activo','Fecha','Método','Monto Total','Efectivo','KLAR','Comentario'],XL.AZUL_MED);
   pagos.forEach((p,i)=>{
     let a=(db.activos||[]).find(x=>x.id===p.activoId)||{nombre:'?'};
     let bg=p.metodo==='Efectivo'?XL.AZUL_L:p.metodo==='KLAR'?XL.VERDE_L:XL.AMAR_L;
     applyRow(ws,4+i,[
-      {v:p.id||'',bg,sz:9,border:true},{v:a.nombre||'',bg,bold:true,sz:9,border:true},
-      {v:p.fecha||'',bg,sz:9,border:true},{v:p.metodo||'',bg,sz:9,align:'center',border:true},
-      {v:+p.monto||0,bg,bold:true,sz:9,fmt:MFmt,border:true},
-      {v:+p.efectivo||0,bg,sz:9,fmt:MFmt,border:true},
-      {v:+p.klarMonto||0,bg,sz:9,fmt:MFmt,border:true},{v:p.comment||'',bg,sz:9,border:true}
+      {v:p.id||'',bg,sz:10,border:true},{v:a.nombre||'',bg,bold:true,sz:10,border:true},
+      {v:p.fecha||'',bg,sz:10,border:true},{v:p.metodo||'',bg,sz:10,align:'center',border:true},
+      {v:+p.monto||0,bg,sz:10,fmt:MFmt,bold:true,border:true},{v:+p.efectivo||0,bg,sz:10,fmt:MFmt,border:true},
+      {v:+p.klarMonto||0,bg,sz:10,fmt:MFmt,border:true},{v:p.comment||'',bg,sz:10,border:true}
     ]);
     setRowHeight(ws,4+i,18);
   });
   ws.autoFilter={from:{row:3,column:1},to:{row:3,column:8}};
   ws.views=[{state:'frozen',xSplit:0,ySplit:3}];
 }
-
+/* ═══════════════════════════════════════════════════════════════ */
 [reportDate,reportStart,reportEnd,reportMonth,reportYear].forEach(e=>e?.addEventListener('change',render));checkDate?.addEventListener('change',function(){
   renderTasks();
   if(document.getElementById('compliance')) renderCompliance();

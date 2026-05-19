@@ -488,14 +488,38 @@ function maxTs(d){let a=[...(d.sales||[]),...(d.expenses||[]),...(d.movements||[
 function newer(a,b){return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;}
 function setOnlineStatus(txt){let p=document.querySelector('.pill'); if(p) p.innerHTML=txt+'<br><b id="today">'+new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+'</b>';}
 function safeJSONParse(txt,fallback){try{return txt?JSON.parse(txt):fallback;}catch(e){console.error('JSON localStorage inválido',e);return fallback;}}
-const __rawPrimary=localStorage.getItem(KEY);
-const __rawOld=localStorage.getItem(OLDKEY);
-if(__rawPrimary){try{localStorage.setItem(KEY+'_backup_pre_activos_'+Date.now(),__rawPrimary);}catch(e){}}
-let db=normalize(safeJSONParse(__rawPrimary||__rawOld, JSON.stringify(blank)));
+function dbScoreRaw(raw){
+  try{
+    let x=typeof raw==='string'?JSON.parse(raw):raw; if(x&&x.db) x=x.db; if(!x||typeof x!=='object') return -1;
+    return (Array.isArray(x.sales)?x.sales.length:0)*10+
+           (Array.isArray(x.movements)?x.movements.length:0)*10+
+           (Array.isArray(x.expenses)?x.expenses.length:0)*10+
+           (Array.isArray(x.maintenance)?x.maintenance.length:0)*10+
+           (x.checks&&typeof x.checks==='object'?Object.keys(x.checks).length:0)*5+
+           (Array.isArray(x.activos)?x.activos.length:0)*2+
+           (Array.isArray(x.pagosActivos)?x.pagosActivos.length:0)*3+
+           (+x.__updatedAt||0)/1000000000000;
+  }catch(e){return -1;}
+}
+function loadBestLocalDB(){
+  const keys=[KEY,OLDKEY,'hielitos_ahh_db_v1','hielitos_ahh_db','hielitosDB','hielitos_db','db'];
+  let bestRaw=null,bestKey='',bestScore=-1;
+  keys.forEach(k=>{let raw=localStorage.getItem(k);let sc=dbScoreRaw(raw);if(sc>bestScore){bestScore=sc;bestRaw=raw;bestKey=k;}});
+  /* Si alguna versión anterior tiene más datos que una versión nueva vacía, usar la de más historial. */
+  if(bestRaw){
+    try{localStorage.setItem(KEY+'_backup_before_rescue_'+Date.now(),bestRaw);}catch(e){}
+    console.warn('HIELITOS AHH!! Storage rescue: cargando datos desde',bestKey,'score',bestScore);
+    return normalize(safeJSONParse(bestRaw, JSON.stringify(blank)));
+  }
+  return normalize(blank);
+}
+let db=loadBestLocalDB();
 function persistLocal(){
-  /* Guardado seguro: NO limpia localStorage, NO cambia de llave y NO elimina historiales existentes. */
+  /* Guardado seguro: NO limpia localStorage, NO cambia de origen y NO elimina historiales existentes. */
   localStorage.setItem(KEY,JSON.stringify(db));
 }
+/* Grabar inmediatamente en la llave actual SOLO después de elegir la base local con más historial. */
+persistLocal();
 function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
 function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
 async function fetchRemoteDB(){

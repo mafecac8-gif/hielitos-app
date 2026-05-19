@@ -477,60 +477,69 @@ function normalize(x){
   d.pagosActivos=Array.isArray(d.pagosActivos)?d.pagosActivos:[];
   /* Si activos vacío y hay master, poblar con maestros */
   if(d.activos.length===0){d.activos=JSON.parse(JSON.stringify(ACTIVOS_MASTER));}
-  d.activos.forEach(a=>{a.id=a.id||nextActivoId();applyExcelActivoPatch(a);a.costo=+a.costo||0;a.plazo=+a.plazo||18;a.mantAnual=+a.mantAnual||0;a.mesesPagados=+a.mesesPagados||0;a.efectivoGuardado=+a.efectivoGuardado||0;a.klarConservadores=+a.klarConservadores||0;if(a.aplicaMant===undefined)a.aplicaMant=true;if(a.costoPorConfirmar===undefined)a.costoPorConfirmar=false;if(a.mantPorConfirmar===undefined)a.mantPorConfirmar=false;});
+  d.activos.forEach(a=>{a.id=a.id||nextActivoId();a.costo=+a.costo||0;a.plazo=+a.plazo||18;a.mantAnual=+a.mantAnual||0;a.mesesPagados=+a.mesesPagados||0;if(a.aplicaMant===undefined)a.aplicaMant=true;if(a.costoPorConfirmar===undefined)a.costoPorConfirmar=false;if(a.mantPorConfirmar===undefined)a.mantPorConfirmar=false;});
   d.pagosActivos.forEach(p=>{p.id=p.id||('PAG'+p.ts);p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
   return d;
 }
 function maxTs(d){let a=[...(d.sales||[]),...(d.expenses||[]),...(d.movements||[]),...(d.maintenance||[])].map(x=>+x.ts||0); Object.values(d.checks||{}).forEach(c=>a.push(+c.ts||0)); return Math.max(0,...a);}
 function newer(a,b){return (+a.__updatedAt||maxTs(a)||0) >= (+b.__updatedAt||maxTs(b)||0) ? a : b;}
 function setOnlineStatus(txt){let p=document.querySelector('.pill'); if(p) p.innerHTML=txt+'<br><b id="today">'+new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'})+'</b>';}
-
-/* ═══ PARCHE SEGURO — NO BORRA LOCALSTORAGE ═══
-   Esta tabla viene del Excel actualizado. Solo completa campos faltantes o corrige
-   costos de mantenimiento por equipo; no elimina ventas, gastos, stock, checklist ni historial. */
-const ACTIVOS_EXCEL_PATCH={
-  1:{mantAnual:800},2:{mantAnual:1600},3:{mantAnual:500},4:{mantAnual:500},5:{mantAnual:500},6:{mantAnual:800},7:{mantAnual:800},
-  8:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
-  9:{mantAnual:800,efectivoGuardado:2516,klarConservadores:1258},
-  10:{mantAnual:20000},11:{mantAnual:3500},12:{mantAnual:2000},13:{mantAnual:0,mantPorConfirmar:true},14:{mantAnual:500},
-  15:{mantAnual:800,efectivoGuardado:10539,klarConservadores:1171},
-  16:{mantAnual:800,efectivoGuardado:10538,klarConservadores:1171},
-  17:{mantAnual:800,efectivoGuardado:8811,klarConservadores:2171},
-  19:{aplicaMant:false,mantAnual:0},20:{mantAnual:0,mantPorConfirmar:true}
-};
-function activoNumeroId(a){let raw=String(a?.id||'').replace(/\D/g,'');return raw?parseInt(raw,10):null;}
-function applyExcelActivoPatch(a){
-  let n=activoNumeroId(a); let patch=ACTIVOS_EXCEL_PATCH[n]; if(!patch) return a;
-  if('aplicaMant' in patch) a.aplicaMant=patch.aplicaMant;
-  if('mantAnual' in patch) a.mantAnual=patch.mantAnual;
-  if('mantPorConfirmar' in patch) a.mantPorConfirmar=patch.mantPorConfirmar;
-  if(a.efectivoGuardado===undefined || a.efectivoGuardado===null) a.efectivoGuardado=patch.efectivoGuardado||0;
-  if(a.klarConservadores===undefined || a.klarConservadores===null) a.klarConservadores=patch.klarConservadores||0;
-  return a;
+/* ── RESCATE SEGURO STORAGE: NO BORRAR HISTORIAL ─────────────────────
+   Este bloque NO inicializa vacío si existen respaldos. Escanea todas las keys
+   locales de Hielitos y usa la base con MÁS historial real. */
+function safeParseJSON(v){try{return JSON.parse(v)}catch(e){return null}}
+function dataScoreRaw(d){
+  if(!d || typeof d!=='object') return -1;
+  if(d.data && typeof d.data==='object') d=d.data;
+  if(d.db && typeof d.db==='object') d=d.db;
+  let score=0;
+  score+=(Array.isArray(d.sales)?d.sales.length:0)*1000;
+  score+=(Array.isArray(d.movements)?d.movements.length:0)*1000;
+  score+=(Array.isArray(d.expenses)?d.expenses.length:0)*1000;
+  score+=(Array.isArray(d.maintenance)?d.maintenance.length:0)*1000;
+  score+=(Array.isArray(d.activos)?d.activos.length:0)*50;
+  score+=(Array.isArray(d.pagosActivos)?d.pagosActivos.length:0)*500;
+  score+=Object.keys(d.checks||{}).length*500;
+  score+=String(JSON.stringify(d)||'').length/100000;
+  return score;
 }
-function recordScore(d){
-  if(!d||typeof d!=='object') return 0;
-  return (Array.isArray(d.sales)?d.sales.length:0)+(Array.isArray(d.expenses)?d.expenses.length:0)+(Array.isArray(d.movements)?d.movements.length:0)+(Array.isArray(d.maintenance)?d.maintenance.length:0)+Object.keys(d.checks||{}).length;
-}
-function loadBestLocalData(){
-  let current={};
-  try{ current=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||JSON.stringify(blank)); }catch(e){ current=cloneBlank(); }
-  let best=current, bestScore=recordScore(current);
-  try{
-    let backups=JSON.parse(localStorage.getItem('hielitos_ahh_autobackup')||'[]');
-    backups.forEach(b=>{let data=b&&b.data?b.data:b; let s=recordScore(data); if(s>bestScore){best=data;bestScore=s;}});
-  }catch(e){console.warn('No se pudieron leer backups locales:',e);}
-  /* Solo restaura automáticamente si la base actual quedó vacía y existe un backup con historial. */
-  if(recordScore(current)===0 && bestScore>0){
-    try{ localStorage.setItem(KEY,JSON.stringify(best)); }catch(e){}
-    return best;
+function getBestLocalHielitosData(){
+  const candidates=[];
+  function add(name,obj){
+    const score=dataScoreRaw(obj);
+    if(score>=0) candidates.push({name,score,obj});
   }
-  return current;
+  add(KEY,safeParseJSON(localStorage.getItem(KEY)||''));
+  add(OLDKEY,safeParseJSON(localStorage.getItem(OLDKEY)||''));
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i)||'';
+    if(!/^hielitos/i.test(k)) continue;
+    const raw=localStorage.getItem(k)||'';
+    const parsed=safeParseJSON(raw);
+    if(Array.isArray(parsed)){
+      parsed.forEach((b,idx)=>add(k+'['+idx+']', b && (b.data||b.db||b)));
+    }else{
+      add(k, parsed && (parsed.data||parsed.db||parsed));
+    }
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  const best=candidates[0];
+  if(best){
+    try{localStorage.setItem(KEY+'_rescue_source', JSON.stringify({source:best.name,score:best.score,date:new Date().toISOString()}));}catch(e){}
+    return best.obj && (best.obj.data||best.obj.db||best.obj);
+  }
+  return null;
 }
-let db=normalize(loadBestLocalData());
+const __currentRaw=safeParseJSON(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||JSON.stringify(blank));
+const __bestRaw=getBestLocalHielitosData()||__currentRaw||blank;
+if(dataScoreRaw(__bestRaw)>dataScoreRaw(__currentRaw)){
+  try{localStorage.setItem(KEY+'_backup_before_rescue_'+Date.now(), JSON.stringify(__currentRaw||{}));}catch(e){}
+  try{localStorage.setItem(KEY, JSON.stringify(__bestRaw));}catch(e){}
+}
+let db=normalize(__bestRaw);
 function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
 function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
-function queueCloudSync(){/* DESACTIVADO para proteger localStorage: no sube/baja datos automáticamente */}
+function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
 async function fetchRemoteDB(){
   const r=await fetch(SUPABASE_API+'?select=id,data&order=created_at.desc&limit=1',{
     headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},cache:'no-store'
@@ -553,7 +562,8 @@ async function uploadRemoteDB(){
   const rows=await r.json().catch(()=>[]); if(rows && rows[0]?.id) cloudRowId=rows[0].id;
 }
 async function ensureStorageBucket(){
-  /* Crea el bucket fotos-checklist si no existe (público) */
+  /* Rescate: no intentar crear bucket desde frontend para evitar errores 400 */
+  return;
   try{
     let r=await fetch(SUPABASE_URL+'/storage/v1/bucket',{
       method:'POST',
@@ -1495,13 +1505,10 @@ function cuotaMensual(a){
   if(!costo||!plazo) return 0;
   return costo/plazo;
 }
-function efectivoActivo(a){return +a.efectivoGuardado||0;}
-function klarConsActivo(a){return +a.klarConservadores||0;}
-function acumuladoRecuperado(a){ return efectivoActivo(a)+klarConsActivo(a); }
-function mesesPagadosReal(a){ let cuota=cuotaMensual(a); if(cuota>0) return Math.min(+a.plazo||0,Math.floor(acumuladoRecuperado(a)/cuota)); return +a.mesesPagados||0; }
-function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-mesesPagadosReal(a)); }
+function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-(+a.mesesPagados||0)); }
+function acumuladoRecuperado(a){ return (db.pagosActivos||[]).filter(p=>p.activoId===a.id).reduce((s,p)=>s+(+p.monto||0),0); }
 function saldoPendienteActivo(a){ return Math.max(0,(+a.costo||0)-acumuladoRecuperado(a)); }
-function avancePct(a){ let c=+a.costo||0; if(!c) return(mesesPagadosReal(a)>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
+function avancePct(a){ let c=+a.costo||0; if(!c) return(a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
 
 function activoSemaforo(a){
   if(a.estado==='Reinvertido') return {color:'#8b5cf6',label:'🔵 Reinvertido',bg:'#f5f3ff'};
@@ -1541,9 +1548,7 @@ function renderActivosKpis(){
   let atras=ac.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
   let pagoMensual=ac.filter(a=>a.estado==='Activo'&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaMensual(a),0);
   let saldoPend=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+saldoPendienteActivo(a),0);
-  let efectivoRecup=ac.reduce((s,a)=>s+efectivoActivo(a),0);
-  let klarConsRecup=ac.reduce((s,a)=>s+klarConsActivo(a),0);
-  let fondoRecup=efectivoRecup+klarConsRecup;
+  let fondoRecup=(db.pagosActivos||[]).reduce((s,p)=>s+(+p.monto||0),0);
   let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+(+a.mantAnual||0),0);
   let mantMensual=mantAnualTotal/12;
   if(window.akTotal) akTotal.textContent=total;
@@ -1553,7 +1558,7 @@ function renderActivosKpis(){
   if(window.akAtrasados) akAtrasados.textContent=atras;
   if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual)+(pagoMensual===0&&enCurso>0?' (confirmar costos)':'');
   if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
-  if(window.akFondoRecup) akFondoRecup.innerHTML=money(fondoRecup)+'<br><small style="font-size:11px;color:var(--muted)">Ef. '+money(efectivoRecup)+' · KLAR Cons. '+money(klarConsRecup)+'</small>';
+  if(window.akFondoRecup) akFondoRecup.textContent=money(fondoRecup);
   if(window.akMantAnualTotal) akMantAnualTotal.textContent=money(mantAnualTotal)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?'+?':'');
   if(window.akMantMensual) akMantMensual.textContent=money(mantMensual)+(ac.some(a=>a.aplicaMant&&a.mantPorConfirmar)?'+?':'');
 }
@@ -1592,9 +1597,9 @@ function renderActivosList(){
       bodyContent=`<div style="background:#f4fbff;border-radius:12px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:8px">
         <div><span style="color:var(--muted)">Costo total</span><br><b>${money(a.costo)}</b></div>
         <div><span style="color:var(--muted)">Cuota mensual</span><br><b>${money(cuota)}</b></div>
-        <div><span style="color:var(--muted)">Recuperado</span><br><b style="color:var(--ok)">${money(rec)}</b><br><small>Ef. ${money(efectivoActivo(a))} · KLAR ${money(klarConsActivo(a))}</small></div>
+        <div><span style="color:var(--muted)">Recuperado</span><br><b style="color:var(--ok)">${money(rec)}</b></div>
         <div><span style="color:var(--muted)">Saldo pendiente</span><br><b style="color:var(--bad)">${money(saldo)}</b></div>
-        <div><span style="color:var(--muted)">Meses pagados/plazo</span><br><b>${mesesPagadosReal(a)}/${a.plazo}</b></div>
+        <div><span style="color:var(--muted)">Meses pagados/plazo</span><br><b>${a.mesesPagados}/${a.plazo}</b></div>
         <div><span style="color:var(--muted)">Meses restantes</span><br><b>${mr}</b></div>
       </div>
       <div style="margin-top:8px">
@@ -1795,11 +1800,7 @@ function savePagoActivo(){
   if(!db.pagosActivos) db.pagosActivos=[];
   db.pagosActivos.push({id:'PAG'+Date.now(),activoId,fecha,metodo,monto,efectivo,klarMonto,comment,tipo:'Recuperacion',ts:Date.now()});
   let activo=(db.activos||[]).find(a=>a.id===activoId);
-  if(activo){
-    activo.efectivoGuardado=(+activo.efectivoGuardado||0)+efectivo;
-    activo.klarConservadores=(+activo.klarConservadores||0)+klarMonto;
-    if(!activo.costoPorConfirmar){ activo.mesesPagados=mesesPagadosReal(activo); }
-  }
+  if(activo&&!activo.costoPorConfirmar){ let cuota=cuotaMensual(activo); if(cuota>0) activo.mesesPagados=Math.min(activo.plazo,activo.mesesPagados+Math.round(monto/cuota)); }
   closePagoActivoModal(); save(); renderActivos(); toast('✅ Pago registrado');
 }
 function deletePago(id){ if(confirm('¿Eliminar este pago?')){db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.id!==id);save();renderActivos();} }
@@ -1884,7 +1885,7 @@ function buildPagosActivos(wb){
   if(document.getElementById('compliance')) renderCompliance();
   renderOperationalKPIs();
 });if(window.compDate&&!compDate.value){compDate.value=today();compMonth.value=today().slice(0,7);compYear.value=new Date().getFullYear();toggleCompControls();}salePaid?.addEventListener('input',calcSale);if(document.getElementById('advExportDate')&&!document.getElementById('advExportDate').value){advExportDate.value=today();advExportStart.value=today();advExportEnd.value=today();advExportMonth.value=today().slice(0,7);advExportYear.value=new Date().getFullYear();toggleAdvExportControls();} if(window.mantDetail)updateMantDetail();
-go('inicio');calcSale();render();
+go('inicio');calcSale();render();syncNow(true);setInterval(()=>syncNow(true),60000);
 /* ═══════════════════ FIXES HIELITOS AHH!! ═══════════════════ */
 
 /* ── PROBLEMA 1: Historial completo (slice → sin límite artificial) ── */

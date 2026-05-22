@@ -406,7 +406,27 @@
     }else s.paid=+s.paid||0;
     s.debt=Math.max(0,s.total-(+s.paid||0));
     s.status=s.debt>0?'Debe':'Pagado';
+    if(s.debt<=0){s.debt=0;s.status='Pagado';}
     return s;
+  }
+  function reconcileAllSales(d){(d||db).sales.forEach(reconcileSalePayments);return d||db;}
+  function saleFinancialScore(s){
+    if(!s)return 0;
+    reconcileSalePayments(s);
+    let payN=(s.payments||[]).length;
+    return (+s.paid||0)*1e12+payN*1e9+(+s.__paidAt||0);
+  }
+  function mergeTwoSales(a,b){
+    a=Object.assign({},a); b=Object.assign({},b);
+    let pm=new Map();
+    [...(a.payments||[]),...(b.payments||[])].forEach(p=>{
+      let k=[p.date||'',+p.amount||0,p.method||'',p.note||''].join('|');
+      pm.set(k,p);
+    });
+    let base=saleFinancialScore(a)>=saleFinancialScore(b)?a:b;
+    let merged=Object.assign({},base,{payments:[...pm.values()]});
+    merged.__paidAt=Math.max(+a.__paidAt||0,+b.__paidAt||0);
+    return reconcileSalePayments(merged);
   }
   function klarSanchezIncomeFromSales(list){return (list||[]).reduce((a,s)=>a+(Array.isArray(s.payments)&&s.payments.length?s.payments.filter(p=>isKlarSanchezPaymentMethod(p.method)).reduce((b,p)=>b+(+p.amount||0),0):(isSuperSanchezClient(s.client)?(+s.paid||0):0)),0)}
   function klarIncomeFromSales(list){return klarSanchezIncomeFromSales(list)}
@@ -594,7 +614,7 @@
   let db=mergeRecovery(JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||JSON.stringify(blank)));
   persistLocal();
   function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
-  function save(){db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
+  function save(){reconcileAllSales(db);db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
   function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
   async function fetchRemoteDB(){
     const r=await fetch(SUPABASE_API+'?select=id,data&order=created_at.desc&limit=1',{
@@ -609,7 +629,12 @@
     /* Re-read remote once more before writing to prevent overwriting concurrent changes */
     try{
       const freshRemote=await fetchRemoteDB();
-      if(freshRemote){db=normalize(mergeKeepHistory(db,freshRemote));dedupeInventoryBeforeRecalc();persistLocal();}
+      if(freshRemote){
+        let sigBefore=JSON.stringify((db.sales||[]).map(s=>({d:+s.debt||0,p:+s.paid||0,n:(s.payments||[]).length})));
+        db=normalize(mergeKeepHistory(db,freshRemote));dedupeInventoryBeforeRecalc();persistLocal();
+        let sigAfter=JSON.stringify((db.sales||[]).map(s=>({d:+s.debt||0,p:+s.paid||0,n:(s.payments||[]).length})));
+        if(sigAfter!==sigBefore&&typeof render==='function') render();
+      }
     }catch(_){}
     const body=JSON.stringify({data:db});
     const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=representation'};
@@ -638,11 +663,11 @@
     try{
       await ensureStorageBucket();
       const remote=await fetchRemoteDB();
-      const prev=JSON.stringify({s:db.sales.length,e:db.expenses.length,m:db.movements.length,c:Object.keys(db.checks).length});
+      const prevSig=JSON.stringify({s:db.sales.length,e:db.expenses.length,m:db.movements.length,c:Object.keys(db.checks).length,fin:(db.sales||[]).reduce((a,x)=>a+(+x.debt||0)+(+x.paid||0),0)});
       if(remote){ db=normalize(mergeRecovery(mergeKeepHistory(db,remote))); } else { db=normalize(mergeRecovery(db)); }
       db.__updatedAt=Date.now(); dedupeInventoryBeforeRecalc(); persistLocal();
-      const curr=JSON.stringify({s:db.sales.length,e:db.expenses.length,m:db.movements.length,c:Object.keys(db.checks).length});
-      if(curr!==prev) render(); /* only re-render if data changed */
+      const currSig=JSON.stringify({s:db.sales.length,e:db.expenses.length,m:db.movements.length,c:Object.keys(db.checks).length,fin:(db.sales||[]).reduce((a,x)=>a+(+x.debt||0)+(+x.paid||0),0)});
+      if(currSig!==prevSig) render();
       await uploadRemoteDB();
       setOnlineStatus('🟢 En línea'); if(!silent) toast('✅ Sincronizado');
     }catch(e){
@@ -707,10 +732,12 @@
       [...(a[k]||[]),...(b[k]||[])].forEach(x=>{
         const s=sig(x);
         if((tomb[k]||[]).includes(s)) return;
+        if(k==='sales'&&m.has(s)) x=mergeTwoSales(m.get(s),x);
         m.set(s,x);
       });
       a[k]=[...m.values()];
     });
+    reconcileAllSales(a);
     const allChecks={};
     [...Object.entries(b.checks||{}),...Object.entries(a.checks||{})].forEach(([ck,cv])=>{
       if((tomb.checks||[]).includes(ck)) return;
@@ -767,9 +794,33 @@
   function saveSale(){let client=saleClient.value.trim(),tipo=activeSaleType(),qty=+saleQty.value||0,price=+salePrice.value||0,total=qty*price,pay=active('pay'),paid=Math.min(+salePaid.value||0,total);if(pay==='Debe'&&paid===0) paid=0;if(!client||!qty)return toast('⚠️ Completa cliente y bolsas');let date=saleDate.value||today(),payments=[],lastPayDate,lastPayMethod;if(paid>0){let method;if(isSuperSanchezClient(client))method=KLAR_SANCHEZ_METHOD;else if(pay==='Efectivo'||pay==='Transferencia')method=pay;if(method){payments.push({date,amount:paid,method,note:pay==='Debe'?'anticipo':''});lastPayDate=date;lastPayMethod=method;}}let sale={date,client,tipo,qty,price,total,pay,paid,debt:Math.max(0,total-paid),status:total-paid>0?'Debe':'Pagado',comment:saleComment.value||'',payments,ts:Date.now()};if(lastPayDate)sale.lastPayDate=lastPayDate;if(lastPayMethod)sale.lastPayMethod=lastPayMethod;reconcileSalePayments(sale);db.sales.push(sale);saleClient.value='';saleQty.value=0;salePrice.value=0;salePaid.value=0;saleComment.value='';calcSale();recalcStock();save();}
   function saveExpense(){let provider=expProv.value.trim(),amount=+expAmount.value||0;if(!provider||!amount)return toast('⚠️ Completa proveedor y monto');db.expenses.push({date:expDate.value||today(),provider,amount,invoice:expInvoice.value,method:expMethod.value,ts:Date.now()});expProv.value='';expAmount.value=0;save();}
   function saveMant(){let desc=mantDesc.value.trim();if(!desc)return toast('⚠️ Agrega descripción');db.maintenance.push({date:mantDate.value||today(),equipo:active('equipo'),detalle:mantDetail?.value||'',tipo:active('mtipo'),desc,cost:+mantCost.value||0,tech:mantTech.value,ts:Date.now()});mantDesc.value='';mantCost.value=0;mantTech.value='';save();}
-  function markSalePaid(i){let s=db.sales[i];let extra=+prompt('¿Cuánto pagó ahora?',s.debt||0)||0;s.paid=Math.min((+s.paid||0)+extra,+s.total||0);s.debt=Math.max(0,(+s.total||0)-(+s.paid||0));s.status=s.debt>0?'Debe':'Pagado';let c=prompt('Comentario de cobro:',s.comment||''); if(c!==null) s.comment=c; save();}
+  function markSalePaid(i){
+    let s=db.sales[i]; if(!s)return;
+    reconcileSalePayments(s);
+    let extra=+prompt('¿Cuánto pagó ahora?',s.debt||0);
+    if(extra===null||extra==='')return;
+    extra=+extra||0;
+    if(extra<=0)return toast('⚠️ El monto debe ser mayor a 0');
+    extra=Math.min(extra,+s.debt||0);
+    if(extra<=0)return toast('⚠️ Sin saldo pendiente');
+    let method;
+    if(isSuperSanchezClient(s.client))method=KLAR_SANCHEZ_METHOD;
+    else{
+      let m=prompt('Método de cobro: Efectivo o Transferencia','Efectivo');
+      if(m===null)return;
+      method=/trans/i.test(m)?'Transferencia':'Efectivo';
+    }
+    s.payments=Array.isArray(s.payments)?s.payments:[];
+    let payDate=today();
+    s.payments.push({date:payDate,amount:extra,method,note:''});
+    reconcileSalePayments(s);
+    s.lastPayDate=payDate; s.lastPayMethod=method; s.__paidAt=Date.now();
+    let c=prompt('Comentario de cobro (fecha auto-guardada: '+payDate+'):',s.comment||'');
+    if(c!==null) s.comment=c+' [cobro '+payDate+']';
+    save();
+  }
   function addSaleComment(i){let c=prompt('Comentario:',db.sales[i].comment||''); if(c!==null){db.sales[i].comment=c;save();}}
-  function editSale(i){let s=db.sales[i];let date=prompt('Fecha de venta (YYYY-MM-DD):',s.date||today()); if(date===null)return;let client=prompt('Cliente:',s.client); if(client===null)return;let tipo=prompt('Tipo: Cubo o Cilindro',s.tipo||'Cubo')||s.tipo; tipo=/cil/i.test(tipo)?'Cilindro':'Cubo';let qty=+prompt('Bolsas:',s.qty); if(!qty)return;let price=+prompt('Precio por bolsa:',s.price);let total=qty*price;let paid=Math.min(+prompt('Monto cobrado:',s.paid)||0,total);let pay=prompt('Pago: Efectivo / Transferencia / Debe',s.pay)||s.pay;let comment=prompt('Comentarios:',s.comment||'')??s.comment;db.sales[i]=Object.assign(s,{date:date||s.date||today(),client,tipo,qty,price,total,paid,pay,debt:Math.max(0,total-paid),status:total-paid>0?'Debe':'Pagado',comment});recalcStock();save();}
+  function editSale(i){let s=db.sales[i];let date=prompt('Fecha de venta (YYYY-MM-DD):',s.date||today()); if(date===null)return;let client=prompt('Cliente:',s.client); if(client===null)return;let tipo=prompt('Tipo: Cubo o Cilindro',s.tipo||'Cubo')||s.tipo; tipo=/cil/i.test(tipo)?'Cilindro':'Cubo';let qty=+prompt('Bolsas:',s.qty); if(!qty)return;let price=+prompt('Precio por bolsa:',s.price);let total=qty*price;let paid=Math.min(+prompt('Monto cobrado:',s.paid)||0,total);let pay=prompt('Pago: Efectivo / Transferencia / Debe',s.pay)||s.pay;let comment=prompt('Comentarios:',s.comment||'')??s.comment;let upd=Object.assign(s,{date:date||s.date||today(),client,tipo,qty,price,total,paid,pay,comment});if(!Array.isArray(upd.payments)||!upd.payments.length){upd.payments=[];}reconcileSalePayments(upd);db.sales[i]=upd;recalcStock();save();}
   function editMove(i){let m=db.movements[i];let date=prompt('Fecha (YYYY-MM-DD):',m.date||today()); if(date===null)return;let tipo=prompt('Tipo: Cubo o Cilindro',m.tipo)||m.tipo; tipo=/cil/i.test(tipo)?'Cilindro':'Cubo';let mov=prompt('Movimiento: Producción o Merma/Donación',m.mov)||m.mov;let qty=+prompt('Bolsas:',m.qty); if(!qty)return;let comment=prompt('Comentarios:',m.comment||'')??m.comment;let delta=mov==='Producción'?qty:-qty;db.movements[i]=Object.assign(m,{date:date||m.date||today(),tipo,mov,qty,delta,comment});recalcStock();save();}
   function editExpense(i){let e=db.expenses[i];let date=prompt('Fecha (YYYY-MM-DD):',e.date||today()); if(date===null)return;let provider=prompt('Proveedor / concepto:',e.provider); if(provider===null)return;let amount=+prompt('Monto:',e.amount);let invoice=prompt('Facturado Sí/No:',e.invoice)||e.invoice;let method=prompt('Método: Efectivo / Transferencia / Apartado Klar',e.method)||e.method;db.expenses[i]=Object.assign(e,{date:date||e.date||today(),provider,amount,invoice,method});save();}
   function editMant(i){let m=db.maintenance[i];let date=prompt('Fecha (YYYY-MM-DD):',m.date||today()); if(date===null)return;let desc=prompt('Descripción:',m.desc); if(desc===null)return;let cost=+prompt('Costo:',m.cost);let tech=prompt('Técnico:',m.tech||'')||'';let equipo=prompt('Equipo: Máquina / Planta / Camioneta / Conservador',m.equipo)||m.equipo;let detalle=prompt('Equipo específico:',m.detalle||'')??(m.detalle||'');let tipo=prompt('Tipo: Preventivo / Correctivo / Falla / Retro-lavado',m.tipo)||m.tipo;db.maintenance[i]=Object.assign(m,{date:date||m.date||today(),desc,cost,tech,equipo,detalle,tipo});save();}
@@ -929,8 +980,35 @@
 
   function renderOperationalKPIs(){let salesD=db.sales.filter(s=>inPeriod(s.date)),expD=db.expenses.filter(e=>inPeriod(e.date)),movD=db.movements.filter(m=>inPeriod(m.date)),mantD=db.maintenance.filter(m=>inPeriod(m.date)),checks=Object.values(db.checks||{}).filter(c=>inPeriod(c.date));let cobrado=salesD.reduce((a,s)=>a+(+s.paid||0),0),gastos=expD.reduce((a,e)=>a+(+e.amount||0),0),producidas=movD.filter(m=>m.mov==='Producción').reduce((a,m)=>a+(+m.qty||0),0),vendidas=salesD.reduce((a,s)=>a+(+s.qty||0),0),reservaBolsas=vendidas*1.5;if(window.opBolsasProd){opBolsasProd.textContent=producidas;if(window.opBolsasVend)opBolsasVend.textContent=vendidas;if(window.opBagReserve)opBagReserve.textContent='Reserva bolsas: '+money(reservaBolsas);opEntregas.textContent=salesD.length;if(window.opGasolina){let gas=expD.filter(e=>/gasolina|combustible|diesel|magna|premium/i.test((e.provider||'')+' '+(e.comment||''))).reduce((a,e)=>a+(+e.amount||0),0);opGasolina.textContent='Gasolina: '+money(gas);} opFallas.textContent=mantD.filter(m=>/falla/i.test(m.tipo)||/falla/i.test(m.desc)).length;opRetro.textContent=mantD.filter(m=>/retro/i.test(m.tipo)||/retro/i.test(m.desc)).length+checks.filter(c=>/retro/i.test((TASKS[c.idx]||{}).actividad||'')).length;opMantPrev.textContent=mantD.filter(m=>/preventivo/i.test(m.tipo)).length;opMantCorr.textContent=mantD.filter(m=>/correctivo/i.test(m.tipo)).length;if(window.opMantLimpieza)opMantLimpieza.textContent=mantD.filter(m=>/limpieza/i.test(m.tipo)).length;opChecklist.textContent=overallCompliancePct()+'%';}}
   function item(a,b,c='',actions=''){return `<div class="item"><div><b>${a}</b><br><small>${b}</small></div><div class="actions"><span class="badge">${c}</span>${actions}</div></div>`}
-  function renderDebtList(){let rows=db.sales.map((s,i)=>({s,i})).filter(x=>x.s.debt>0);debtList.innerHTML=rows.length?rows.map(({s,i})=>item(`⚠️ ${s.client}`,`${s.tipo||'Cubo'} · Total ${money(s.total)} · Cobrado ${money(s.paid)} · Debe ${money(s.debt)}<br>📝 ${s.comment||'Sin comentarios'}`,s.status||'Debe',`<button class="mini ok" onclick="markSalePaid(${i})">Marcar pago</button><button class="mini" onclick="addSaleComment(${i})">Comentario</button><button class="mini" onclick="editSale(${i})">Editar</button><button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>`)).join(''):item('Sin deudas','Todos los clientes están pagados','OK');}
+  function renderDebtList(){
+    let rows=db.sales.map((s,i)=>({s,i})).filter(x=>+x.s.debt>0)
+      .sort((a,b)=>String(b.s.date||'').localeCompare(String(a.s.date||'')));
+    if(!window.debtList) return;
+    debtList.innerHTML=rows.length?rows.map(({s,i})=>{
+      let saldo=money(+s.debt||0);
+      let pagado=money(+s.paid||0);
+      let original=money(+s.total||0);
+      let fechaVenta=s.date||'—';
+      let comentario=String(s.comment||'').trim();
+      let pagoLine=+s.paid>0
+        ?`Cobrado ${pagado} · ${comentario||'Sin comentario'}`
+        :`Sin pago registrado — Pendiente${comentario?' · '+comentario:''}`;
+      let klarBadge=isSuperSanchezClient(s.client)?' · 🏦 Klar SS':'';
+      return item(
+        `⚠️ ${s.client}`,
+        `📅 ${fechaVenta} · ${s.tipo||'Cubo'} · ${s.qty||0} bolsas · Total ${original}${klarBadge}`+
+        `<br>💰 Cobrado: ${pagado} · <b>Saldo pendiente: ${saldo}</b>`+
+        `<br>📝 ${pagoLine}`,
+        s.debt>0?'Debe':'Pagado',
+        `<button class="mini ok" onclick="markSalePaid(${i})">Marcar pago</button>`+
+        `<button class="mini" onclick="addSaleComment(${i})">Comentario</button>`+
+        `<button class="mini" onclick="editSale(${i})">Editar</button>`+
+        `<button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>`
+      );
+    }).join(''):item('Sin deudas','Todos los clientes están pagados','OK');
+  }
   function render(){
+  reconcileAllSales(db);
   document.getElementById('today').textContent=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'short'});
   [prodDate,saleDate,expDate,mantDate,checkDate,reportDate,reportStart,reportEnd].forEach(e=>{if(e&&!e.value)e.value=today()});
   if(reportMonth&&!reportMonth.value)reportMonth.value=today().slice(0,7);
@@ -975,7 +1053,7 @@
   }
 
   function clientKey(name){return normalizeText(name).replace(/\s+/g,' ')}
-  function clientStats(){let map=new Map();(db.sales||[]).forEach(s=>{let name=(s.client||'Sin cliente').trim()||'Sin cliente';let key=clientKey(name);if(!map.has(key))map.set(key,{name,aliases:new Set(),bags:0,paid:0,debt:0,total:0,ventas:0,last:''});let c=map.get(key);c.aliases.add(name);c.bags+=+s.qty||0;c.paid+=+s.paid||0;c.debt+=+s.debt||0;c.total+=+s.total||0;c.ventas++;if(String(s.date||'')>String(c.last||''))c.last=s.date;});return [...map.values()].sort((a,b)=>b.total-a.total)}
+  function clientStats(){let map=new Map();(db.sales||[]).forEach(s=>{reconcileSalePayments(s);let name=(s.client||'Sin cliente').trim()||'Sin cliente';let key=clientKey(name);if(!map.has(key))map.set(key,{name,aliases:new Set(),bags:0,paid:0,debt:0,total:0,ventas:0,last:''});let c=map.get(key);c.aliases.add(name);c.bags+=+s.qty||0;c.paid+=+s.paid||0;c.debt+=+s.debt||0;c.total+=+s.total||0;c.ventas++;if(String(s.date||'')>String(c.last||''))c.last=s.date;});return [...map.values()].sort((a,b)=>b.total-a.total)}
   function renderClients(){if(!window.clientList)return;let q=normalizeText(clientSearch?.value||'');let rows=clientStats().filter(c=>!q||normalizeText(c.name).includes(q)||[...c.aliases].some(a=>normalizeText(a).includes(q)));let totals=rows.reduce((a,c)=>{a.bags+=c.bags;a.paid+=c.paid;a.debt+=c.debt;return a},{bags:0,paid:0,debt:0});clTotal.textContent=rows.length;clBags.textContent=totals.bags;clPaid.textContent=money(totals.paid);clDebt.textContent=money(totals.debt);clientList.innerHTML=rows.length?rows.map(c=>item(`👥 ${c.name}`,`Compras: ${c.ventas} · Bolsas: ${c.bags} · Pagado ${money(c.paid)} · Debe ${money(c.debt)} · Total ${money(c.total)}<br><small>Variantes: ${[...c.aliases].join(', ')}</small>`,c.debt>0?'Debe':'OK',`<button class="mini" onclick="renameClient('${clientKey(c.name).replace(/'/g,"\\'")}')">Homologar</button>`)).join(''):item('Sin clientes','Los clientes se generan automáticamente desde ventas','')}
   function renameClient(key){let current=clientStats().find(c=>clientKey(c.name)===key);if(!current)return;let nuevo=prompt('Nombre homologado para este cliente:',current.name);if(!nuevo)return;let aliases=[...current.aliases].map(clientKey);db.sales.forEach(s=>{if(aliases.includes(clientKey(s.client)))s.client=nuevo.trim()});save();renderClients();}
 
@@ -2249,38 +2327,6 @@
 
   })();
 
-  /* ── PROBLEMA 3: Fechas y trazabilidad en clientes que deben ────────── */
-  /* renderDebtList mejorado ya está en el flujo; la versión corregida
-    añade fecha de venta, monto original, monto pagado, saldo y fecha pago */
-  window.renderDebtList=function(){
-    let rows=db.sales.map((s,i)=>({s,i})).filter(x=>+x.s.debt>0)
-      .sort((a,b)=>String(b.s.date||'').localeCompare(String(a.s.date||'')));
-    if(!window.debtList) return;
-    debtList.innerHTML=rows.length?rows.map(({s,i})=>{
-      let saldo=money(+s.debt||0);
-      let pagado=money(+s.paid||0);
-      let original=money(+s.total||0);
-      let fechaVenta=s.date||'—';
-      /* Mostrar comentario/folio igual que en historial de ventas */
-      let comentario=String(s.comment||'').trim();
-      let pagoLine=+s.paid>0
-        ?`Cobrado ${pagado} · ${comentario||'Sin comentario'}`
-        :`Sin pago registrado — Pendiente${comentario?' · '+comentario:''}`;
-      let klarBadge=isSuperSanchezClient(s.client)?' · 🏦 Klar SS':'';
-      return item(
-        `⚠️ ${s.client}`,
-        `📅 ${fechaVenta} · ${s.tipo||'Cubo'} · ${s.qty||0} bolsas · Total ${original}${klarBadge}`+
-        `<br>💰 Cobrado: ${pagado} · <b>Saldo pendiente: ${saldo}</b>`+
-        `<br>📝 ${pagoLine}`,
-        s.debt>0?'Debe':'Pagado',
-        `<button class="mini ok" onclick="markSalePaid(${i})">Marcar pago</button>`+
-        `<button class="mini" onclick="addSaleComment(${i})">Comentario</button>`+
-        `<button class="mini" onclick="editSale(${i})">Editar</button>`+
-        `<button class="mini bad" onclick="deleteSale(${i})">Eliminar</button>`
-      );
-    }).join(''):item('Sin deudas','Todos los clientes están pagados','OK');
-  };
-
   /* ── PROBLEMA 4: Deduplicación de ventas, movimientos y stock ───────── */
   window.deduplicateMovements=function(){return deduplicateMovementsIn(db);};
   /* Función que elimina duplicados exactos manteniendo info válida */
@@ -2454,36 +2500,6 @@
     card.className='card';
     card.innerHTML='<h2>🔍 Conciliación de Stock</h2><div class="body" id="stockReconciliation"><p style="color:var(--muted)">Cargando...</p></div>';
     stockSec.appendChild(card);
-  })();
-
-  /* ── markSalePaid: guardar fecha real del pago ───────────────────────── */
-  (function patchMarkPaid(){
-    window.markSalePaid=function(i){
-      let s=db.sales[i];
-      if(!s)return;
-      let extra=+prompt('¿Cuánto pagó ahora?',s.debt||0);
-      if(extra===null||extra==='')return;
-      extra=+extra||0;
-      if(extra<=0)return toast('⚠️ El monto debe ser mayor a 0');
-      extra=Math.min(extra,+s.debt||0);
-      if(extra<=0)return toast('⚠️ Sin saldo pendiente');
-      let method;
-      if(isSuperSanchezClient(s.client))method=KLAR_SANCHEZ_METHOD;
-      else{
-        let m=prompt('Método de cobro: Efectivo o Transferencia','Efectivo');
-        if(m===null)return;
-        method=/trans/i.test(m)?'Transferencia':'Efectivo';
-      }
-      s.payments=Array.isArray(s.payments)?s.payments:[];
-      let payDate=today();
-      s.payments.push({date:payDate,amount:extra,method,note:''});
-      reconcileSalePayments(s);
-      s.lastPayDate=payDate;
-      s.lastPayMethod=method;
-      let c=prompt('Comentario de cobro (fecha auto-guardada: '+payDate+'):',s.comment||'');
-      if(c!==null) s.comment=c+' [cobro '+payDate+']';
-      save();
-    };
   })();
 
   /* ── Inicialización final ─────────────────────────────────────────────── */

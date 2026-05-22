@@ -600,6 +600,79 @@
   const SUPABASE_API=SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/'+SUPABASE_TABLE;
   let syncTimer=null, isSyncing=false, cloudRowId=null;
   function cloneBlank(){return JSON.parse(JSON.stringify(blank));}
+  /* ─── Activos: pagosActivos = única fuente de verdad para recuperación ─── */
+  function cuotaMensual(a){ let plazo=+a.plazo||18,costo=+a.costo||0; if(!costo||!plazo) return 0; return costo/plazo; }
+  function isPagoRecuperacion(p){ return p && p.tipo!=='Mantenimiento' && !String(p.id||'').startsWith('MANT'); }
+  function pagosRecuperacionActivo(a,d){ d=d||db; return (d.pagosActivos||[]).filter(p=>p.activoId===a.id&&isPagoRecuperacion(p)); }
+  function pagoRecupSplit(p){
+    let m=+p.monto||0;
+    if(p.metodo==='Mixto') return {efectivo:+p.efectivo||0,transferencia:+p.transferencia||0,klarSanchez:+p.klarSanchez||0,klarCons:+p.klarCons||0};
+    let ef=+p.efectivo||0,tr=+p.transferencia||0,ks=+p.klarSanchez||0,kc=+p.klarCons||0;
+    if(ef||tr||ks||kc) return {efectivo:ef,transferencia:tr,klarSanchez:ks,klarCons:kc};
+    if(p.metodo==='Efectivo') return {efectivo:m,transferencia:0,klarSanchez:0,klarCons:0};
+    if(p.metodo==='Transferencia') return {efectivo:0,transferencia:m,klarSanchez:0,klarCons:0};
+    if(p.metodo==='KLAR Sánchez') return {efectivo:0,transferencia:0,klarSanchez:m,klarCons:0};
+    if(p.metodo==='KLAR Conservadores') return {efectivo:0,transferencia:0,klarSanchez:0,klarCons:m};
+    if(+p.klarMonto>0) return {efectivo:0,transferencia:0,klarSanchez:0,klarCons:+p.klarMonto||0};
+    return {efectivo:m,transferencia:0,klarSanchez:0,klarCons:0};
+  }
+  function acumuladoRecuperado(a,d){ d=d||db; return pagosRecuperacionActivo(a,d).reduce((s,p)=>s+(+p.monto||0),0); }
+  function saldoPendienteActivo(a,d){ return Math.max(0,(+a.costo||0)-acumuladoRecuperado(a,d)); }
+  function avancePct(a,d){ let c=+a.costo||0; if(!c) return(+a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a,d)/c*100)); }
+  function cuotaPendienteMensual(a,d){ let saldo=saldoPendienteActivo(a,d); if(saldo<=0) return 0; return Math.min(cuotaMensual(a),saldo); }
+  function recalcActivoFromPagos(a,d){
+    d=d||db; if(!a||!a.id) return a;
+    let rec=acumuladoRecuperado(a,d), cuota=cuotaMensual(a);
+    if(!a.costoPorConfirmar&&cuota>0) a.mesesPagados=Math.min(+a.plazo||0,Math.round(rec/cuota));
+    else if(rec>0&&+a.costo>0&&+a.plazo>0) a.mesesPagados=Math.min(+a.plazo,Math.ceil(rec/cuota)||+a.plazo);
+    return a;
+  }
+  function recalcAllActivosFromPagos(d){ d=d||db; (d.activos||[]).forEach(a=>recalcActivoFromPagos(a,d)); return d; }
+  function calcRecuperacionKpis(d){
+    d=d||db;
+    let out={total:0,efectivo:0,transferencia:0,klarCons:0,klarSanchez:0};
+    (d.pagosActivos||[]).filter(isPagoRecuperacion).forEach(p=>{
+      let sp=pagoRecupSplit(p);
+      out.efectivo+=sp.efectivo; out.transferencia+=sp.transferencia;
+      out.klarCons+=sp.klarCons; out.klarSanchez+=sp.klarSanchez;
+      out.total+=+p.monto||0;
+    });
+    return out;
+  }
+  function migrateLegacyActivosRecovery(d){
+    if(!d.pagosActivos) d.pagosActivos=[];
+    (d.activos||[]).forEach(a=>{
+      if(!a.id) return;
+      let hasM=id=>d.pagosActivos.some(p=>p.id===id);
+      let existingSum=pagosRecuperacionActivo(a,d).reduce((s,p)=>s+(+p.monto||0),0);
+      let ef=+a.recuperadoEfectivo||0, kc=+a.recuperadoKlarCons||0;
+      if(existingSum===0){
+        if(ef>0&&!hasM('MIG-EF-'+a.id)){
+          d.pagosActivos.push({id:'MIG-EF-'+a.id,activoId:a.id,fecha:a.fechaCompra||today(),metodo:'Efectivo',monto:ef,efectivo:ef,transferencia:0,klarSanchez:0,klarCons:0,comment:'migración efectivo',tipo:'Recuperacion',ts:1});
+        }
+        if(kc>0&&!hasM('MIG-KC-'+a.id)){
+          d.pagosActivos.push({id:'MIG-KC-'+a.id,activoId:a.id,fecha:a.fechaCompra||today(),metodo:'KLAR Conservadores',monto:kc,efectivo:0,transferencia:0,klarSanchez:0,klarCons:kc,comment:'migración klar cons',tipo:'Recuperacion',ts:2});
+        }
+        let recAfter=pagosRecuperacionActivo(a,d).reduce((s,p)=>s+(+p.monto||0),0);
+        if(recAfter===0&&+a.mesesPagados>0&&+a.costo>0&&!a.costoPorConfirmar&&!hasM('MIG-MP-'+a.id)){
+          let amt=Math.min(+a.costo,Math.round(+a.mesesPagados*cuotaMensual(a)));
+          if(amt>0) d.pagosActivos.push({id:'MIG-MP-'+a.id,activoId:a.id,fecha:a.fechaCompra||today(),metodo:'Efectivo',monto:amt,efectivo:amt,transferencia:0,klarSanchez:0,klarCons:0,comment:'migración meses pagados',tipo:'Recuperacion',ts:3});
+        }
+      }
+      a.recuperadoEfectivo=0; a.recuperadoKlarCons=0;
+    });
+  }
+  function deduplicatePagosActivosIn(d){
+    if(!d.pagosActivos||!d.pagosActivos.length) return 0;
+    let m=new Map(), prev=d.pagosActivos.length;
+    d.pagosActivos.forEach(p=>{
+      let k=String(p.id||pagoSig(p));
+      let prevP=m.get(k);
+      if(!prevP||(p.ts||0)>(prevP.ts||0)) m.set(k,p);
+    });
+    d.pagosActivos=[...m.values()];
+    return prev-d.pagosActivos.length;
+  }
   function normalize(x){
     let d=(x&&typeof x==='object'&&!Array.isArray(x))?x:cloneBlank();
     if(d.db&&typeof d.db==='object') d=d.db;
@@ -636,7 +709,16 @@
       if(a.recuperadoEfectivo===undefined)a.recuperadoEfectivo=0;
       if(a.recuperadoKlarCons===undefined)a.recuperadoKlarCons=0;
     });
-    d.pagosActivos.forEach(p=>{p.id=p.id||('PAG'+p.ts);p.monto=+p.monto||0;p.efectivo=+p.efectivo||0;p.klarMonto=+p.klarMonto||0;p.ts=p.ts||Date.now();});
+    d.pagosActivos.forEach(p=>{
+      p.id=p.id||('PAG'+p.ts); p.monto=+p.monto||0; p.efectivo=+p.efectivo||0;
+      p.transferencia=+p.transferencia||0; p.klarSanchez=+p.klarSanchez||0; p.klarCons=+p.klarCons||0;
+      if(+p.klarMonto>0&&!p.klarCons&&!p.klarSanchez) p.klarCons=+p.klarMonto;
+      p.klarMonto=+p.klarMonto||0; p.ts=p.ts||Date.now();
+      if(!p.tipo) p.tipo=String(p.id||'').startsWith('MANT')?'Mantenimiento':'Recuperacion';
+    });
+    migrateLegacyActivosRecovery(d);
+    deduplicatePagosActivosIn(d);
+    recalcAllActivosFromPagos(d);
     d.__deletedRecords=d.__deletedRecords||{};
     ['sales','expenses','movements','maintenance','checks','activos','pagosActivos'].forEach(k=>{d.__deletedRecords[k]=Array.isArray(d.__deletedRecords[k])?d.__deletedRecords[k].map(String):[];});
     return d;
@@ -647,7 +729,7 @@
   let db=mergeRecovery(JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLDKEY)||JSON.stringify(blank)));
   persistLocal();
   function persistLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
-  function save(){reconcileAllSales(db);db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
+  function save(){reconcileAllSales(db);recalcAllActivosFromPagos(db);db.__updatedAt=Date.now();persistLocal();render();toast('✅ Guardado');queueCloudSync();}
   function queueCloudSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(true),650);}
   async function fetchRemoteDB(){
     const r=await fetch(SUPABASE_API+'?select=id,data&order=created_at.desc&limit=1',{
@@ -793,6 +875,8 @@
     });
     a.pagosActivos=[...pagosM.values()];
     a=applyDeletedFilter(a,tomb);
+    deduplicatePagosActivosIn(a);
+    recalcAllActivosFromPagos(a);
     deduplicateMovementsIn(a);
     recalcStockFor(a);
     return a;
@@ -929,12 +1013,50 @@
     }
   }
 
-  function showPreview(previewEl,url,base64,fileName){
+  function showPreview(previewEl,url,base64,fileName,idx){
     if(!previewEl) return;
     let src=url||base64||'';
     if(!src){previewEl.innerHTML='';return;}
-    previewEl.innerHTML=`<img src="${src}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${src}" download="${fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>`;
+    let delBtn=typeof idx==='number'?checkPhotoDeleteBtn(idx):'';
+    previewEl.innerHTML=`<img src="${src}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${src}" download="${fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>${delBtn}`;
   }
+  function getCheckKeyForIdx(idx){
+    if(typeof getCheckPeriodKey==='function') return getCheckPeriodKey()+'|'+idx;
+    return k(checkDate?.value||today(),idx);
+  }
+  function checkHasPhoto(c){
+    if(!c) return false;
+    return !!(c.fileUrl||c.fileData||(c.fileName&&String(c.fileName).trim()));
+  }
+  function checkPhotoDeleteBtn(idx){
+    return `<button type="button" class="mini bad" style="margin-top:4px" onclick="deleteCheckPhoto(${idx})">🗑 Eliminar foto</button>`;
+  }
+  function checkPhotoHtml(i,c){
+    c=c||{};
+    let photoSrc=c.fileUrl||c.fileData||'';
+    if(photoSrc){
+      return `<div id="prev${i}"><img src="${photoSrc}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${photoSrc}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a>${checkPhotoDeleteBtn(i)}</div>`;
+    }
+    if(c.fileName&&String(c.fileName).trim()){
+      return `<div id="prev${i}"><span class="badge">📎 ${c.fileName} — foto registrada ✓ (vuelve a seleccionarla si no se ve)</span>${checkPhotoDeleteBtn(i)}</div>`;
+    }
+    return `<div id="prev${i}"></div>`;
+  }
+  window.deleteCheckPhoto=function(idx){
+    if(!confirm('¿Eliminar la foto de evidencia? El registro del checklist se conservará.')) return;
+    let key=getCheckKeyForIdx(idx);
+    let rec=db.checks[key];
+    if(!rec||!checkHasPhoto(rec)) return toast('⚠️ No hay foto que eliminar');
+    delete rec.fileUrl;
+    delete rec.fileData;
+    delete rec.fileName;
+    rec.ts=Date.now();
+    db.checks[key]=rec;
+    let ev=document.getElementById('ev'+idx);
+    if(ev) ev.value='';
+    save();
+    toast('✅ Foto eliminada');
+  };
 
   function setCheckWithPhoto(idx,done,comment,fileInput){
     let date=checkDate.value||today();let key=k(date,idx);
@@ -945,14 +1067,14 @@
       .then(({fileUrl,fileName,fileData})=>{
         db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,fileUrl:fileUrl||'',fileData:fileData||'',date,idx});
         save();
-        showPreview(preview,fileUrl,fileData,fileName);
+        showPreview(preview,fileUrl,fileData,fileName,idx);
       });
     } else {
       db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,date,idx});
       save();
     }
   }
-  function renderTasks(){freqFilters.innerHTML=['Diaria','Semanal','Mensual','Bimestral','Trimestral','Semestral','Anual'].map(f=>`<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';renderTasks()">${f}</button>`).join('');let date=checkDate.value||today();taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{let c=db.checks[k(date,i)]||{};let photoSrc=c.fileUrl||c.fileData||'';let photoHtml=photoSrc?`<div id="prev${i}"><img src="${photoSrc}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${photoSrc}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} — foto registrada ✓ (vuelve a seleccionarla si no se ve)</span>`:''}</div>`;return `<div class="task ${c.done?'done':''}"><div class="tasktop"><input type="checkbox" ${c.done?'checked':''} onchange="setCheck(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')"><div><div class="act">${t.icon} ${t.actividad}</div><div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div></div></div><textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheck(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea><label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheckWithPhoto(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this)"></label>${photoHtml}</div>`}).join('')}
+  function renderTasks(){freqFilters.innerHTML=['Diaria','Semanal','Mensual','Bimestral','Trimestral','Semestral','Anual'].map(f=>`<button class="${f===currentFreq?'active':''}" onclick="currentFreq='${f}';renderTasks()">${f}</button>`).join('');let date=checkDate.value||today();taskList.innerHTML=TASKS.map((t,i)=>[t,i]).filter(([t])=>t.freq===currentFreq).map(([t,i])=>{let c=db.checks[k(date,i)]||{};let photoHtml=checkPhotoHtml(i,c);return `<div class="task ${c.done?'done':''}"><div class="tasktop"><input type="checkbox" ${c.done?'checked':''} onchange="setCheck(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')"><div><div class="act">${t.icon} ${t.actividad}</div><div class="meta"><b>${t.freq} · ${t.rubro}</b><br>🎯 ${t.meta}<br>👤 ${t.resp}</div></div></div><textarea id="com${i}" placeholder="Comentarios / hallazgos" onblur="setCheck(${i},${c.done?'true':'false'},this.value,document.getElementById('ev${i}').files[0]?.name||'')">${c.comment||''}</textarea><label class="photo">📸 Evidencia / foto<input id="ev${i}" type="file" accept="image/*" onchange="setCheckWithPhoto(${i},${c.done?'true':'false'},document.getElementById('com${i}').value,this)"></label>${photoHtml}</div>`}).join('')}
   function toggleCompControls(){/* Periodicidad fija: Diario/Semanal/Mensual/Trimestral/Semestral/Anual */}
   function compDateInPeriod(date){
     /* Filtra checks por la fecha seleccionada en el checklist */
@@ -1748,27 +1870,8 @@
   let currentActivoFilter='Todos';
   let currentActivosTab='activos';
 
-  /* ─── Helpers de cálculo ─── */
-  function cuotaMensual(a){
-    let plazo=+a.plazo||18, costo=+a.costo||0;
-    if(!costo||!plazo) return 0;
-    return costo/plazo;
-  }
+  /* ─── Helpers de cálculo (UI) ─── */
   function mesesRestantes(a){ return Math.max(0,(+a.plazo||0)-(+a.mesesPagados||0)); }
-  function acumuladoRecuperado(a){
-    let ef=+a.recuperadoEfectivo||0;
-    let klar=+a.recuperadoKlarCons||0;
-    // Solo pagos de recuperación (excluir fondo mantenimiento)
-    let pagos=(db.pagosActivos||[]).filter(p=>p.activoId===a.id&&p.tipo!=='Mantenimiento').reduce((s,p)=>s+(+p.monto||0),0);
-    let explicito=ef+klar+pagos;
-    // Fallback: si no hay datos explícitos, estimar desde mesesPagados × cuota
-    if(explicito===0 && +a.mesesPagados>0 && !a.costoPorConfirmar && +a.costo>0){
-      return Math.min(+a.costo, Math.round(+a.mesesPagados * cuotaMensual(a)));
-    }
-    return explicito;
-  }
-  function saldoPendienteActivo(a){ return Math.max(0,(+a.costo||0)-acumuladoRecuperado(a)); }
-  function avancePct(a){ let c=+a.costo||0; if(!c) return(a.mesesPagados>0?100:0); return Math.min(100,Math.round(acumuladoRecuperado(a)/c*100)); }
 
   function activoSemaforo(a){
     if(a.estado==='Reinvertido') return {color:'#8b5cf6',label:'🔵 Reinvertido',bg:'#f5f3ff'};
@@ -1805,9 +1908,10 @@
     let standBy=ac.filter(a=>a.estado==='Stand By').length;
     let reinvert=ac.filter(a=>a.estado==='Reinvertido').length;
     let atras=ac.filter(a=>a.estado==='Activo'&&mesesRestantes(a)<=2&&avancePct(a)<100).length;
-    let pagoMensual=ac.filter(a=>a.estado==='Activo'&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaMensual(a),0);
+    let pagoMensual=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+cuotaPendienteMensual(a),0);
     let saldoPend=ac.filter(a=>['Activo','Stand By'].includes(a.estado)&&!a.costoPorConfirmar).reduce((s,a)=>s+saldoPendienteActivo(a),0);
-    let fondoRecup=(db.activos||[]).reduce((s,a)=>s+acumuladoRecuperado(a),0);
+    let kpis=calcRecuperacionKpis(db);
+    let fondoRecup=kpis.total;
     let mantAnualTotal=ac.filter(a=>a.aplicaMant&&!a.mantPorConfirmar&&+a.mantAnual>0).reduce((s,a)=>s+(+a.mantAnual||0),0);
     let mantMensual=Math.round(mantAnualTotal/12);
     if(window.akTotal) akTotal.textContent=total;
@@ -1816,9 +1920,9 @@
     if(window.akReinvertidos) akReinvertidos.textContent=reinvert;
     if(window.akAtrasados) akAtrasados.textContent=atras;
     if(window.akPagoMensual) akPagoMensual.textContent=money(pagoMensual)+(pagoMensual===0&&enCurso>0?' (confirmar costos)':'');
-    let recupEf=(db.activos||[]).reduce((s,a)=>s+(+a.recuperadoEfectivo||0),0);
-    let recupKlar=(db.activos||[]).reduce((s,a)=>s+(+a.recuperadoKlarCons||0),0);
-    let recupApp=(db.pagosActivos||[]).reduce((s,p)=>s+(+p.monto||0),0);
+    let recupEf=kpis.efectivo;
+    let recupKlar=kpis.klarCons;
+    let recupApp=kpis.transferencia+kpis.klarSanchez;
     if(window.akSaldoPend) akSaldoPend.textContent=money(saldoPend);
     if(window.akFondoRecup) akFondoRecup.textContent=money(fondoRecup);
     if(window.akRecupEf) akRecupEf.textContent=money(recupEf);
@@ -1902,7 +2006,7 @@
   /* ─── Pagos / Recuperación ─── */
   function renderPagosList(){
     if(!window.pagosList) return;
-    let pagos=[...(db.pagosActivos||[])].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    let pagos=[...(db.pagosActivos||[])].filter(isPagoRecuperacion).sort((a,b)=>(b.ts||0)-(a.ts||0));
     if(!pagos.length){pagosList.innerHTML='<div class="item"><div><b>Sin pagos registrados</b><br><small>Registra los pagos recibidos para recuperar la inversión</small></div></div>';return;}
     let totalRecup=pagos.reduce((s,p)=>s+(+p.monto||0),0);
     pagosList.innerHTML=`<div style="background:#e9f5ff;border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
@@ -1995,6 +2099,7 @@
     document.getElementById('acCosto').value=a?.costo||0;
     document.getElementById('acCostoPC').checked=!!(a?.costoPorConfirmar);
     document.getElementById('acPlazo').value=a?.plazo||18;
+    if(a) recalcActivoFromPagos(a);
     document.getElementById('acMesesPagados').value=a?.mesesPagados||0;
     document.getElementById('acAplicaMant').checked=!!(a?.aplicaMant);
     document.getElementById('acMantAnual').value=a?.mantAnual||0;
@@ -2006,12 +2111,21 @@
   }
   function closeAddActivoModal(){ document.getElementById('modalAddActivo').style.display='none'; editingActivoId=null; }
   function editActivo(id){ openAddActivoModal(id); }
-  function deleteActivo(id){ if(confirm('¿Eliminar este activo?')){markDeleted('activos',{id});db.activos=(db.activos||[]).filter(a=>a.id!==id);save();renderActivos();} }
+  function deleteActivo(id){
+    if(!confirm('¿Eliminar este activo?')) return;
+    markDeleted('activos',{id});
+    (db.pagosActivos||[]).filter(p=>p.activoId===id).forEach(p=>markDeleted('pagosActivos',p));
+    db.activos=(db.activos||[]).filter(a=>a.id!==id);
+    db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.activoId!==id);
+    save(); renderActivos();
+  }
   function saveActivo(){
     let nombre=document.getElementById('acNombre').value.trim();
     if(!nombre) return toast('⚠️ Ingresa el nombre del activo');
     let aplicaMant=document.getElementById('acAplicaMant').checked;
+    let prev=editingActivoId?(db.activos||[]).find(x=>x.id===editingActivoId):null;
     let obj={
+      ...(prev||{}),
       id:editingActivoId||nextActivoId(),
       nombre,
       categoria:document.getElementById('acCategoria').value,
@@ -2021,13 +2135,15 @@
       costo:+document.getElementById('acCosto').value||0,
       costoPorConfirmar:document.getElementById('acCostoPC').checked,
       plazo:+document.getElementById('acPlazo').value||18,
-      mesesPagados:+document.getElementById('acMesesPagados').value||0,
       aplicaMant,
       mantAnual:aplicaMant?(+document.getElementById('acMantAnual').value||0):0,
       mantPorConfirmar:aplicaMant&&document.getElementById('acMantPC').checked,
       reinvertidoEn:document.getElementById('acReinvertidoEn').value.trim(),
       notas:document.getElementById('acNotas').value.trim(),
+      recuperadoEfectivo:0,
+      recuperadoKlarCons:0,
     };
+    recalcActivoFromPagos(obj);
     if(!db.activos) db.activos=[];
     if(editingActivoId){ let idx=db.activos.findIndex(a=>a.id===editingActivoId); if(idx>=0) db.activos[idx]=obj; else db.activos.push(obj); }
     else db.activos.push(obj);
@@ -2087,10 +2203,20 @@
     if(!db.pagosActivos) db.pagosActivos=[];
     db.pagosActivos.push({id:'PAG'+Date.now(),activoId,fecha,metodo,monto,efectivo,transferencia,klarSanchez,klarCons,comment,tipo:'Recuperacion',ts:Date.now()});
     let activo=(db.activos||[]).find(a=>a.id===activoId);
-    if(activo&&!activo.costoPorConfirmar){let cuota=cuotaMensual(activo);if(cuota>0)activo.mesesPagados=Math.min(activo.plazo,activo.mesesPagados+Math.round(monto/cuota));}
+    if(activo) recalcActivoFromPagos(activo);
     closePagoActivoModal(); save(); renderActivos(); toast('✅ Pago registrado correctamente');
   }
-  function deletePago(id){ if(confirm('¿Eliminar este pago?')){let p=(db.pagosActivos||[]).find(x=>x.id===id);if(p) markDeleted('pagosActivos',p);db.pagosActivos=(db.pagosActivos||[]).filter(p=>p.id!==id);save();renderActivos();} }
+  function deletePago(id){
+    if(!confirm('¿Eliminar este pago?')) return;
+    let p=(db.pagosActivos||[]).find(x=>x.id===id);
+    if(p) markDeleted('pagosActivos',p);
+    db.pagosActivos=(db.pagosActivos||[]).filter(x=>x.id!==id);
+    if(p&&p.activoId){
+      let activo=(db.activos||[]).find(a=>a.id===p.activoId);
+      if(activo) recalcActivoFromPagos(activo);
+    }
+    save(); renderActivos();
+  }
 
   /* ─── Fondo Mantenimiento Modal ─── */
   function openFondoMantModal(activoId){
@@ -2201,25 +2327,28 @@
   function buildPagosActivos(wb){
     if(typeof ExcelJS==='undefined') return;
     let ws=wb.addWorksheet('💳 Recuperación Inversión');
-    setColWidths(ws,[14,32,13,14,14,14,14,28]);
-    let pagos=[...(db.pagosActivos||[])].sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
-    let NC=8;
+    setColWidths(ws,[14,32,13,14,14,14,14,14,28]);
+    let pagos=[...(db.pagosActivos||[])].filter(isPagoRecuperacion).sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
+    let NC=9;
     titleRow(ws,1,'💳  HIELITOS AHH!! — Recuperación de Inversión',NC,XL.AZUL_MED,40);
     subRow(ws,2,NC,pagos.length+' pagos · Total: $'+pagos.reduce((s,p)=>s+(+p.monto||0),0).toLocaleString('es-MX',{minimumFractionDigits:2}));
-    hdrRow(ws,3,['ID','Activo','Fecha','Método','Monto Total','Efectivo','KLAR','Comentario'],XL.AZUL_MED);
+    hdrRow(ws,3,['ID','Activo','Fecha','Método','Monto Total','Efectivo','Transferencia','KLAR','Comentario'],XL.AZUL_MED);
     pagos.forEach((p,i)=>{
       let a=(db.activos||[]).find(x=>x.id===p.activoId)||{nombre:'?'};
-      let bg=p.metodo==='Efectivo'?XL.AZUL_L:p.metodo==='KLAR'?XL.VERDE_L:XL.AMAR_L;
+      let sp=pagoRecupSplit(p);
+      let klarAmt=sp.klarCons+sp.klarSanchez;
+      let bg=p.metodo==='Efectivo'?XL.AZUL_L:p.metodo==='Transferencia'?XL.AMAR_L:p.metodo==='Mixto'?XL.AMAR_L:XL.VERDE_L;
       applyRow(ws,4+i,[
         {v:p.id||'',bg,sz:9,border:true},{v:a.nombre||'',bg,bold:true,sz:9,border:true},
         {v:p.fecha||'',bg,sz:9,border:true},{v:p.metodo||'',bg,sz:9,align:'center',border:true},
         {v:+p.monto||0,bg,bold:true,sz:9,fmt:MFmt,border:true},
-        {v:+p.efectivo||0,bg,sz:9,fmt:MFmt,border:true},
-        {v:+p.klarMonto||0,bg,sz:9,fmt:MFmt,border:true},{v:p.comment||'',bg,sz:9,border:true}
+        {v:sp.efectivo,bg,sz:9,fmt:MFmt,border:true},
+        {v:sp.transferencia,bg,sz:9,fmt:MFmt,border:true},
+        {v:klarAmt,bg,sz:9,fmt:MFmt,border:true},{v:p.comment||'',bg,sz:9,border:true}
       ]);
       setRowHeight(ws,4+i,18);
     });
-    ws.autoFilter={from:{row:3,column:1},to:{row:3,column:8}};
+    ws.autoFilter={from:{row:3,column:1},to:{row:3,column:9}};
     ws.views=[{state:'frozen',xSplit:0,ySplit:3}];
   }
 
@@ -2706,8 +2835,7 @@
         .filter(([t])=>t.freq===currentFreq && respMatches(t.resp,taskResp))
         .map(([t,i])=>{
         let c=db.checks[periodKey+'|'+i]||{};
-        let photoSrc=c.fileUrl||c.fileData||'';
-        let photoHtml=photoSrc?`<div id="prev${i}"><img src="${photoSrc}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:4px;"><a href="${photoSrc}" download="${c.fileName||'foto'}" style="display:block;font-size:11px;color:var(--azul);margin-top:2px;">⬇️ Descargar foto</a></div>`:`<div id="prev${i}">${c.fileName?`<span class="badge">📎 ${c.fileName} — foto registrada ✓ (vuelve a seleccionarla si no se ve)</span>`:''}</div>`;
+        let photoHtml=checkPhotoHtml(i,c);
         return `<div class="task ${c.done?'done':''}">
           <div class="tasktop">
           <input type="checkbox" ${c.done?'checked':''} onchange="setCheckPeriod(${i},this.checked,document.getElementById('com${i}').value,document.getElementById('ev${i}').files[0]?.name||'')">
@@ -2743,7 +2871,7 @@
         db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,fileName,fileUrl:fileUrl||'',fileData:fileData||'',date:periodKey,idx,freq:currentFreq,ts:Date.now()});
         save();
         if(document.getElementById('compliance')) renderCompliance();
-        showPreview(preview,fileUrl,fileData,fileName);
+        showPreview(preview,fileUrl,fileData,fileName,idx);
       });
     } else {
       db.checks[key]=Object.assign(db.checks[key]||{},{done,comment,date:periodKey,idx,freq:currentFreq,ts:Date.now()});

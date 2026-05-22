@@ -382,10 +382,37 @@
   function isKlarSanchezExpenseMethod(m){let x=String(m||'');return x==='Apartado Klar Sánchez'||x==='Apartado Klar'}
   function isKlarSanchezMethod(m){return isKlarSanchezPaymentMethod(m)||isKlarSanchezExpenseMethod(m)}
   function saleCobradoByMethod(s,method){
-    if(!s)return 0;
+    if(!s||isSuperSanchezClient(s.client))return 0;
     if(Array.isArray(s.payments)&&s.payments.length)return s.payments.filter(p=>String(p.method||'')===method).reduce((a,p)=>a+(+p.amount||0),0);
     if(s.pay===method)return +s.paid||0;
     return 0;
+  }
+  function klarSanchezIncomeFromSales(list){
+    return (list||[]).reduce((a,s)=>{
+      if(!isSuperSanchezClient(s.client))return a;
+      reconcileSalePayments(s);
+      return a+(+s.paid||0);
+    },0);
+  }
+  function klarIncomeFromSales(list){return klarSanchezIncomeFromSales(list)}
+  function klarSanchezExpenseFromExpenses(list){return (list||[]).filter(e=>isKlarSanchezExpenseMethod(e.method)).reduce((a,e)=>a+(+e.amount||0),0)}
+  function klarExpenseFromExpenses(list){return klarSanchezExpenseFromExpenses(list)}
+  function calcCfoMetrics(sales,expenses,dbRef){
+    sales=sales||[]; expenses=expenses||[];
+    sales.forEach(reconcileSalePayments);
+    let vEfectivo=sales.reduce((a,s)=>a+saleCobradoByMethod(s,'Efectivo'),0);
+    let vTransferencia=sales.reduce((a,s)=>a+saleCobradoByMethod(s,'Transferencia'),0);
+    let klarIngresos=klarIncomeFromSales(sales);
+    let ventasTotal=vEfectivo+vTransferencia+klarIngresos;
+    let gEfectivo=expenses.filter(e=>e.method==='Efectivo').reduce((a,e)=>a+(+e.amount||0),0);
+    let gTransferencia=expenses.filter(e=>e.method==='Transferencia').reduce((a,e)=>a+(+e.amount||0),0);
+    let gKlar=klarExpenseFromExpenses(expenses);
+    let klarSaldo=getKlarInitial(dbRef||db)+klarIngresos-gKlar;
+    let deben=sales.reduce((a,s)=>a+(+s.debt||0),0);
+    let ventasBrutas=sales.reduce((a,s)=>a+(+s.total||0),0);
+    let cobrado=sales.reduce((a,s)=>a+(+s.paid||0),0);
+    let utilidadNeta=ventasTotal-gEfectivo-gTransferencia-gKlar;
+    return {vEfectivo,vTransferencia,klarIngresos,ventasTotal,gEfectivo,gTransferencia,gKlar,klarSaldo,deben,ventasBrutas,cobrado,utilidadNeta};
   }
   function reconcileSalePayments(s){
     if(!s)return s;
@@ -428,7 +455,13 @@
     merged.__paidAt=Math.max(+a.__paidAt||0,+b.__paidAt||0);
     return reconcileSalePayments(merged);
   }
-  function klarSanchezIncomeFromSales(list){return (list||[]).reduce((a,s)=>a+(Array.isArray(s.payments)&&s.payments.length?s.payments.filter(p=>isKlarSanchezPaymentMethod(p.method)).reduce((b,p)=>b+(+p.amount||0),0):(isSuperSanchezClient(s.client)?(+s.paid||0):0)),0)}
+  function klarSanchezIncomeFromSales(list){
+    return (list||[]).reduce((a,s)=>{
+      if(!isSuperSanchezClient(s.client))return a;
+      reconcileSalePayments(s);
+      return a+(+s.paid||0);
+    },0);
+  }
   function klarIncomeFromSales(list){return klarSanchezIncomeFromSales(list)}
   function klarSanchezExpenseFromExpenses(list){return (list||[]).filter(e=>isKlarSanchezExpenseMethod(e.method)).reduce((a,e)=>a+(+e.amount||0),0)}
   function klarExpenseFromExpenses(list){return klarSanchezExpenseFromExpenses(list)}
@@ -1020,25 +1053,18 @@
   let salesD=db.sales.filter(s=>inPeriod(s.date)),expD=db.expenses.filter(e=>inPeriod(e.date));
   cashToday.textContent=money(db.sales.filter(s=>s.date===today()).reduce((a,s)=>a+(+s.paid||0),0));
   debtTotal.textContent=money(db.sales.reduce((a,s)=>a+(+s.debt||0),0));
-  let ventas=salesD.reduce((a,s)=>a+(+s.total||0),0);
-  let vEfectivo=salesD.reduce((a,s)=>a+saleCobradoByMethod(s,'Efectivo'),0);
-  let vTransferencia=salesD.reduce((a,s)=>a+saleCobradoByMethod(s,'Transferencia'),0);
-  let gEfectivo=expD.filter(e=>e.method==='Efectivo').reduce((a,e)=>a+(+e.amount||0),0);
-  let gTransferencia=expD.filter(e=>e.method==='Transferencia').reduce((a,e)=>a+(+e.amount||0),0);
-  let klar=klarExpenseFromExpenses(expD);
-  let klarIngresos=klarIncomeFromSales(salesD);
-  let klarSaldo=getKlarInitial(db)+klarIngresos-klar;
-  let deben=salesD.reduce((a,s)=>a+(+s.debt||0),0);
-  if(typeof rVEfectivo!=='undefined')rVEfectivo.textContent=money(vEfectivo);
-  if(typeof rVTransferencia!=='undefined')rVTransferencia.textContent=money(vTransferencia);
-  rVentas.textContent=money(ventas);
-  if(typeof rGEfectivo!=='undefined')rGEfectivo.textContent=money(gEfectivo);
-  if(typeof rGTransferencia!=='undefined')rGTransferencia.textContent=money(gTransferencia);
-  rKlar.textContent=money(klar);
-  if(typeof rKlarIngresos!=='undefined')rKlarIngresos.textContent=money(klarIngresos);
-  if(typeof rKlarSaldo!=='undefined')rKlarSaldo.textContent=money(klarSaldo);
-  rDeben.textContent=money(deben);
-  rUtil.textContent=money(ventas-gEfectivo-gTransferencia-klar-deben);
+  let cfo=calcCfoMetrics(salesD,expD,db);
+  let debenGlobal=db.sales.reduce((a,s)=>a+(+s.debt||0),0);
+  if(typeof rVEfectivo!=='undefined')rVEfectivo.textContent=money(cfo.vEfectivo);
+  if(typeof rVTransferencia!=='undefined')rVTransferencia.textContent=money(cfo.vTransferencia);
+  rVentas.textContent=money(cfo.ventasTotal);
+  if(typeof rGEfectivo!=='undefined')rGEfectivo.textContent=money(cfo.gEfectivo);
+  if(typeof rGTransferencia!=='undefined')rGTransferencia.textContent=money(cfo.gTransferencia);
+  rKlar.textContent=money(cfo.gKlar);
+  if(typeof rKlarIngresos!=='undefined')rKlarIngresos.textContent=money(cfo.klarIngresos);
+  if(typeof rKlarSaldo!=='undefined')rKlarSaldo.textContent=money(cfo.klarSaldo);
+  rDeben.textContent=money(debenGlobal);
+  rUtil.textContent=money(cfo.utilidadNeta);
   if(document.getElementById('compliance'))renderCompliance();
   renderOperationalKPIs();
   renderDebtList();
@@ -1084,7 +1110,7 @@
   function advCsvValue(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
   function advDownload(content,name,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
   function advRows(section){let d=advFiltered(),rows=[];if(section==='ventas'||section==='todo'){rows.push(['VENTAS']);rows.push(['Fecha','Cliente','Tipo hielo','Bolsas','Precio','Total','Cobrado','Debe','Método','Estatus','Apartado Klar SS','Comentarios']);d.sales.forEach(s=>rows.push([s.date,s.client,s.tipo||'',s.qty,s.price||'',s.total,s.paid,s.debt,s.pay,s.status||'',isSuperSanchezClient(s.client)?'Sí':'No',s.comment||'']));rows.push([])}if(section==='gastos'||section==='todo'){rows.push(['GASTOS']);rows.push(['Fecha','Proveedor / Concepto','Monto','Facturado','Método','Comentarios']);d.expenses.forEach(e=>rows.push([e.date,e.provider,e.amount,e.invoice,e.method,e.comment||'']));rows.push([])}if(section==='stock'||section==='todo'){rows.push(['STOCK / INVENTARIO']);rows.push(['Fecha','Tipo hielo','Movimiento','Bolsas','Delta','Comentarios']);d.movements.forEach(m=>rows.push([m.date,m.tipo,m.mov,m.qty,m.delta,m.comment||'']));rows.push([])}if(section==='mantenimiento'||section==='todo'){rows.push(['MANTENIMIENTO']);rows.push(['Fecha','Equipo','Tipo','Descripción','Costo','Técnico']);d.maintenance.forEach(m=>rows.push([m.date,m.equipo,m.tipo,m.desc,m.cost,m.tech||'']));rows.push([])}if(section==='checklist'||section==='todo'){rows.push(['CHECKLIST']);rows.push(['Fecha','Periodicidad','Rubro','Actividad','Meta','Responsable','Estado','Comentario','Evidencia']);d.checks.forEach(c=>{let t=TASKS[c.idx]||{};rows.push([c.date,t.freq||'',t.rubro||'',t.actividad||'',t.meta||'',t.resp||'',c.done?'Cumplido':'Pendiente',c.comment||'',c.fileName||''])});rows.push([])}if(section==='deudas'||section==='todo'){rows.push(['DEUDAS / CUENTAS POR COBRAR']);rows.push(['Fecha','Cliente','Tipo hielo','Bolsas','Total','Cobrado','Debe','Estatus','Comentarios']);d.sales.filter(s=>(+s.debt||0)>0).forEach(s=>rows.push([s.date,s.client,s.tipo||'',s.qty,s.total,s.paid,s.debt,s.status||'Debe',s.comment||'']));rows.push([])}return rows}
-  function advSummaryRows(){let d=advFiltered();let vEf=d.sales.reduce((a,s)=>a+saleCobradoByMethod(s,'Efectivo'),0),vTr=d.sales.reduce((a,s)=>a+saleCobradoByMethod(s,'Transferencia'),0),vTot=d.sales.reduce((a,s)=>a+(+s.total||0),0),cobrado=d.sales.reduce((a,s)=>a+(+s.paid||0),0),deben=d.sales.reduce((a,s)=>a+(+s.debt||0),0),gEf=d.expenses.filter(e=>e.method==='Efectivo').reduce((a,e)=>a+(+e.amount||0),0),gTr=d.expenses.filter(e=>e.method==='Transferencia').reduce((a,e)=>a+(+e.amount||0),0),gK=klarExpenseFromExpenses(d.expenses),kIng=klarIncomeFromSales(d.sales),kSaldo=getKlarInitial(db)+kIng-gK,bolsasVend=d.sales.reduce((a,s)=>a+(+s.qty||0),0),bolsasProd=d.movements.filter(m=>m.mov==='Producción').reduce((a,m)=>a+(+m.qty||0),0),reservaBolsas=bolsasVend*1.5,mantPrev=d.maintenance.filter(m=>/preventivo/i.test(m.tipo)).length,mantCorr=d.maintenance.filter(m=>/correctivo/i.test(m.tipo)).length,retro=d.maintenance.filter(m=>/retro/i.test(m.tipo)||/retro/i.test(m.desc)).length;return[['RESUMEN GENERAL'],['Periodo',advPeriodLabel()],['Fecha descarga',new Date().toLocaleString('es-MX')],['Stock Cubo actual',db.stock?.Cubo||0],['Stock Cilindro actual',db.stock?.Cilindro||0],['Ventas efectivo',advMoney(vEf)],['Ventas transferencia',advMoney(vTr)],['Ventas total',advMoney(vTot)],['Cobrado total',advMoney(cobrado)],['Deben',advMoney(deben)],['Gastos efectivo',advMoney(gEf)],['Gastos transferencia',advMoney(gTr)],['Gastos Apartado Klar',advMoney(gK)],['Saldo inicial Apartado Klar',advMoney(getKlarInitial(db))],['Ingresos Apartado Klar SS',advMoney(kIng)],['Saldo Apartado Klar',advMoney(kSaldo)],['Utilidad neta',advMoney(vTot-gEf-gTr-gK-deben)],['Bolsas producidas',bolsasProd],['Bolsas vendidas',bolsasVend],['Reserva bolsas vendidas x $1.50',advMoney(reservaBolsas)],['Mantenimientos preventivos',mantPrev],['Mantenimientos correctivos',mantCorr],['Retro-lavados',retro],['Registros ventas',d.sales.length],['Registros gastos',d.expenses.length],['Registros stock',d.movements.length],['Registros mantenimiento',d.maintenance.length],['Registros checklist',d.checks.length],[]]}
+  function advSummaryRows(){let d=advFiltered();let m=calcCfoMetrics(d.sales,d.expenses,db);let debenGlobal=(db.sales||[]).reduce((a,s)=>{reconcileSalePayments(s);return a+(+s.debt||0);},0);let bolsasVend=d.sales.reduce((a,s)=>a+(+s.qty||0),0),bolsasProd=d.movements.filter(x=>x.mov==='Producción').reduce((a,x)=>a+(+x.qty||0),0),reservaBolsas=bolsasVend*1.5,mantPrev=d.maintenance.filter(x=>/preventivo/i.test(x.tipo)).length,mantCorr=d.maintenance.filter(x=>/correctivo/i.test(x.tipo)).length,retro=d.maintenance.filter(x=>/retro/i.test(x.tipo)||/retro/i.test(x.desc)).length;return[['RESUMEN GENERAL'],['Periodo',advPeriodLabel()],['Fecha descarga',new Date().toLocaleString('es-MX')],['Stock Cubo actual',db.stock?.Cubo||0],['Stock Cilindro actual',db.stock?.Cilindro||0],['Ventas efectivo',advMoney(m.vEfectivo)],['Ventas transferencia',advMoney(m.vTransferencia)],['Ingresos Klar SS',advMoney(m.klarIngresos)],['Ventas total',advMoney(m.ventasTotal)],['Ventas brutas (facturación)',advMoney(m.ventasBrutas)],['Cobrado total',advMoney(m.cobrado)],['Deben',advMoney(debenGlobal)],['Gastos efectivo',advMoney(m.gEfectivo)],['Gastos transferencia',advMoney(m.gTransferencia)],['Gastos Apartado Klar',advMoney(m.gKlar)],['Saldo inicial Apartado Klar',advMoney(getKlarInitial(db))],['Ingresos Apartado Klar SS',advMoney(m.klarIngresos)],['Saldo Apartado Klar Sánchez',advMoney(m.klarSaldo)],['Utilidad neta',advMoney(m.utilidadNeta)],['Bolsas producidas',bolsasProd],['Bolsas vendidas',bolsasVend],['Reserva bolsas vendidas x $1.50',advMoney(reservaBolsas)],['Mantenimientos preventivos',mantPrev],['Mantenimientos correctivos',mantCorr],['Retro-lavados',retro],['Registros ventas',d.sales.length],['Registros gastos',d.expenses.length],['Registros stock',d.movements.length],['Registros mantenimiento',d.maintenance.length],['Registros checklist',d.checks.length],[]]}
   function downloadAdvancedCSV(section='todo'){let rows=(section==='todo'?advSummaryRows():[]).concat(advRows(section));let csv='\ufeff'+rows.map(r=>r.map(advCsvValue).join(',')).join('\n');advDownload(csv,'hielitos_ahh_'+section+'_'+advPeriodLabel().replaceAll(' ','_').replaceAll('/','-')+'.csv','text/csv;charset=utf-8;')}
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -1176,21 +1202,22 @@
     setColWidths(ws,[26,22,10,24,24,22,12,12]);
 
     let sv=d.sales,ev=d.expenses,mv=d.movements,mn=d.maintenance,ch=d.checks;
-    let vTot=sv.reduce((a,s)=>a+(+s.total||0),0);
-    let cob=sv.reduce((a,s)=>a+(+s.paid||0),0);
-    let deb=sv.reduce((a,s)=>a+(+s.debt||0),0);
-    let gTot=ev.reduce((a,e)=>a+(+e.amount||0),0);
-    let gK=klarExpenseFromExpenses(ev), kIng=klarIncomeFromSales(sv);
-    let kSaldo=getKlarInitial(d)+kIng-gK;
-    let bProd=mv.filter(m=>m.mov==='Producción').reduce((a,m)=>a+(+m.qty||0),0);
-    let util=cob-gTot;
+    let m=calcCfoMetrics(sv,ev,d);
+    let vTot=m.ventasTotal;
+    let cob=m.cobrado;
+    let deb=(db.sales||[]).reduce((a,s)=>{reconcileSalePayments(s);return a+(+s.debt||0);},0);
+    let gTot=m.gEfectivo+m.gTransferencia+m.gKlar;
+    let kSaldo=m.klarSaldo;
+    let bProd=mv.filter(x=>x.mov==='Producción').reduce((a,x)=>a+(+x.qty||0),0);
+    let util=m.utilidadNeta;
+    let vBrutas=m.ventasBrutas;
     let chArr=Object.values(ch||{});
     let chOk=chArr.filter(c=>c.done).length, chTot=chArr.length;
     let chPct=chTot?Math.round(chOk/chTot*100):0;
     let mPrev=mn.filter(m=>/preventivo/i.test(m.tipo)).length;
     let mCorr=mn.filter(m=>/correctivo/i.test(m.tipo)).length;
     let mFall=mn.filter(m=>/falla/i.test(m.tipo||'')).length;
-    let debPct=vTot>0?Math.round(deb/vTot*100):0;
+    let debPct=vBrutas>0?Math.round(deb/vBrutas*100):0;
     let NC=8;
 
     // Row 1: Title
@@ -1224,9 +1251,9 @@
     setRowHeight(ws,9,22);
 
     let semData=[
-      ['Ventas Totales','$'+vTot.toLocaleString('es-MX',{minimumFractionDigits:2}),vTot>0?'🟢':'🔴',XL.VERDE_L,'>$0 en el periodo','Sin ventas','—'],
-      ['Cobrado','$'+cob.toLocaleString('es-MX',{minimumFractionDigits:2})+' ('+Math.round(cob/(vTot||1)*100)+'%)',cob>=(vTot*.9)?'🟢':cob>=(vTot*.75)?'🟡':'🔴',cob>=(vTot*.9)?XL.VERDE_L:cob>=(vTot*.75)?XL.AMAR_L:XL.ROJO_L,'>90% de ventas','75-90%','<75%'],
-      ['Deuda / CxC','$'+deb.toLocaleString('es-MX',{minimumFractionDigits:2})+' ('+debPct+'%)',debPct<=5?'🟢':debPct<=10?'🟡':'🔴',debPct<=5?XL.VERDE_L:debPct<=10?XL.AMAR_L:XL.ROJO_L,'<5% de ventas','5-10%','>10%'],
+      ['Ventas Totales (cobrado)','$'+vTot.toLocaleString('es-MX',{minimumFractionDigits:2}),vTot>0?'🟢':'🔴',XL.VERDE_L,'>$0 en el periodo','Sin ventas','—'],
+      ['Cobrado vs facturado','$'+cob.toLocaleString('es-MX',{minimumFractionDigits:2})+' ('+Math.round(cob/(vBrutas||1)*100)+'%)',cob>=(vBrutas*.9)?'🟢':cob>=(vBrutas*.75)?'🟡':'🔴',cob>=(vBrutas*.9)?XL.VERDE_L:cob>=(vBrutas*.75)?XL.AMAR_L:XL.ROJO_L,'>90% de facturado','75-90%','<75%'],
+      ['Deuda / CxC','$'+deb.toLocaleString('es-MX',{minimumFractionDigits:2})+' ('+debPct+'%)',debPct<=5?'🟢':debPct<=10?'🟡':'🔴',debPct<=5?XL.VERDE_L:debPct<=10?XL.AMAR_L:XL.ROJO_L,'<5% de facturado','5-10%','>10%'],
       ['Saldo Klar','$'+kSaldo.toLocaleString('es-MX',{minimumFractionDigits:2}),kSaldo>=0?'🟢':'🔴',kSaldo>=0?XL.VERDE_L:XL.ROJO_L,'Saldo positivo','Próximo a $0','Negativo'],
       ['Utilidad Neta','$'+util.toLocaleString('es-MX',{minimumFractionDigits:2}),util>=0?'🟢':'🔴',util>=0?XL.VERDE_L:XL.ROJO_L,'Positiva','Cerca de $0','Negativa'],
       ['Cumpl. Checklist',chPct+'% ('+chOk+'/'+chTot+')',chPct>=90?'🟢':chPct>=75?'🟡':'🔴',chPct>=90?XL.VERDE_L:chPct>=75?XL.AMAR_L:XL.ROJO_L,'≥90%','75-89%','<75%'],
@@ -1255,16 +1282,13 @@
     let ws=wb.addWorksheet('💰 Estado Resultados');
     setColWidths(ws,[38,16,14]);
     let sv=d.sales,ev=d.expenses;
-    let vEf=sv.reduce((a,s)=>a+saleCobradoByMethod(s,'Efectivo'),0);
-    let vTr=sv.reduce((a,s)=>a+saleCobradoByMethod(s,'Transferencia'),0);
-    let vTot=sv.reduce((a,s)=>a+(+s.total||0),0);
-    let cob=sv.reduce((a,s)=>a+(+s.paid||0),0);
-    let deb=sv.reduce((a,s)=>a+(+s.debt||0),0);
-    let gEf=ev.filter(e=>e.method==='Efectivo').reduce((a,e)=>a+(+e.amount||0),0);
-    let gTr=ev.filter(e=>e.method==='Transferencia').reduce((a,e)=>a+(+e.amount||0),0);
-    let gK=klarExpenseFromExpenses(ev);
+    let m=calcCfoMetrics(sv,ev,d);
+    let vEf=m.vEfectivo,vTr=m.vTransferencia,vTot=m.ventasTotal,vBrutas=m.ventasBrutas;
+    let kIng=m.klarIngresos;
+    let deb=(db.sales||[]).reduce((a,s)=>{reconcileSalePayments(s);return a+(+s.debt||0);},0);
+    let gEf=m.gEfectivo,gTr=m.gTransferencia,gK=m.gKlar;
     let gTot=gEf+gTr+gK;
-    let util=cob-gTot;
+    let util=m.utilidadNeta;
     let p=(n,d2)=>d2>0?((n/d2)*100).toFixed(1)+'%':'0%';
     let NC=3;
 
@@ -1274,11 +1298,12 @@
     sectionRow(ws,4,'📈  INGRESOS',NC,XL.VERDE_L);
     hdrRow(ws,5,['Concepto','Monto ($)','% del Total'],XL.VERDE);
     let iRows=[
-      ['Ventas efectivo (cobrado)',vEf,p(vEf,vTot),XL.VERDE_L,XL.BLANCO],
-      ['Ventas transferencia (cobrado)',vTr,p(vTr,vTot),XL.BLANCO,XL.BLANCO],
-      ['Ventas a crédito — pendiente cobrar',deb,p(deb,vTot),XL.VERDE_L,XL.BLANCO],
-      ['TOTAL VENTAS BRUTAS',vTot,'100%',XL.VERDE_L,'FF005F45',true],
-      ['TOTAL COBRADO',cob,p(cob,vTot),XL.VERDE_L,'FF005F45',true],
+      ['Ventas efectivo (no SS)',vEf,p(vEf,vTot),XL.VERDE_L,XL.BLANCO],
+      ['Ventas transferencia (no SS)',vTr,p(vTr,vTot),XL.BLANCO,XL.BLANCO],
+      ['Ingresos Klar SS',kIng,p(kIng,vTot),XL.VERDE_L,XL.BLANCO],
+      ['TOTAL VENTAS COBRADAS',vTot,'100%',XL.VERDE_L,'FF005F45',true],
+      ['Ventas brutas (facturación)',vBrutas,p(vBrutas,vBrutas),XL.BLANCO,XL.BLANCO],
+      ['Cuentas por cobrar — pendiente',deb,p(deb,vBrutas),XL.AMAR_L,XL.BLANCO],
     ];
     iRows.forEach(([lbl,val,pct,bg,fg,bold],i)=>{
       applyRow(ws,6+i,[
@@ -1288,7 +1313,7 @@
       ]);
       setRowHeight(ws,6+i,18);
     });
-    let r=11;
+    let r=12;
     blankRow(ws,r++,8);
     sectionRow(ws,r,  '📉  EGRESOS',NC,XL.ROJO_L); r++;
     hdrRow(ws,r,['Concepto','Monto ($)','% de Egresos'],XL.ROJO); r++;
@@ -1559,8 +1584,8 @@
     let ws=wb.addWorksheet('💳 Klar');
     setColWidths(ws,[13,30,16,16,35]);
     let sv=d.sales,ev=d.expenses; let NC=5;
-    let kIng=klarIncomeFromSales(sv), gK=klarExpenseFromExpenses(ev);
-    let kSaldo=getKlarInitial(d)+kIng-gK;
+    let m=calcCfoMetrics(sv,ev,d);
+    let kIng=m.klarIngresos,gK=m.gKlar,kSaldo=m.klarSaldo;
     let ssSales=sv.filter(s=>isSuperSanchezClient(s.client));
     let klarExp=ev.filter(e=>isKlarSanchezExpenseMethod(e.method));
 

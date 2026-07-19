@@ -1,0 +1,25 @@
+{
+  "name": "Hielitos AHH!! Sistema Operativo Móvil",
+  "short_name": "Hielitos AHH",
+  "description": "Inventario, ventas y operación Hielitos AHH",
+  "start_url": "./hielitos.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#003882",
+  "theme_color": "#003882",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "349x367",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "349x367",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
